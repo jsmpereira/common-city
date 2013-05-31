@@ -1,4 +1,8 @@
 ;;;; simcity.asd
+(defpackage #:simcity-config (:export #:*base-directory*))
+(defparameter simcity-config:*base-directory* 
+  (make-pathname :name nil :type nil :defaults *load-truename*))
+
 
 (asdf:defsystem #:simcity
   :serial t

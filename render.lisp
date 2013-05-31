@@ -10,9 +10,12 @@
 
 (defparameter *cursor* :dozer)
 
+(defparameter *assets-dir* 
+  (merge-pathnames #P"assets/" simcity-config:*base-directory*))
+
 (defparameter *audio-assets*
-  '(:dozer "/Users/josesantos/quicklisp/local-projects/simcity/rumble.wav"
-    :bop "/Users/josesantos/quicklisp/local-projects/simcity/bop.wav"))
+  `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
+	   :bop ,(merge-pathnames "bop.wav" *assets-dir*)))
 
  (defun play-sound (asset)
    (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
