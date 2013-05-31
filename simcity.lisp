@@ -43,9 +43,9 @@
       (sdl:draw-line-* (+ x (/ size 2)) (+ y (/ size 4)) (+ x (/ size 2)) y :color sdl:*white*))))
 
 (defmacro do-world ((i j) &body body)
-  `(loop for ,i below (array-dimension *world* 0) do
-	 (loop for ,j below (array-dimension *world* 1) do
-	       ,@body)))
+  `(loop for ,i below (array-dimension *world* 0)
+	 do (loop for ,j below (array-dimension *world* 1)
+		  do ,@body)))
 
 (defun random-tile ()
   (nth (random 2) 
