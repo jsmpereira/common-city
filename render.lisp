@@ -19,7 +19,7 @@
      (sdl-mixer:play-sample sound)))
 
 (defun render-step ()
-  (with-world
+  (do-world (i j)
     (draw (aref *world* i j)))
   (loop for entity in *entities* do
 	(draw-residencial entity)))

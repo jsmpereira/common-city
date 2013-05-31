@@ -42,6 +42,11 @@
     (when (equal tile-type :road)
       (sdl:draw-line-* (+ x (/ size 2)) (+ y (/ size 4)) (+ x (/ size 2)) y :color sdl:*white*))))
 
+(defmacro do-world ((i j) &body body)
+  `(loop for ,i below (array-dimension *world* 0) do
+	 (loop for ,j below (array-dimension *world* 1) do
+	       ,@body)))
+
 (defun random-tile ()
   (nth (random 2) 
        (loop for i in *tiles* by #'cddr
@@ -51,7 +56,7 @@
   (let ((tile nil)
 	(coord-x nil)
 	(coord-y nil))
-    (with-world
+    (do-world (i j)
       (with-accessors ((tile-x x) (tile-y y)) (aref *world* i j)
 	(when (tile-bounds tile-x tile-y x y)
 	  (setf tile (aref *world* i j))
@@ -120,13 +125,8 @@
 	  (draw tile))
     (sdl:draw-rectangle-* (x top-left) (y top-left) 60 60 :color color)))
 
-(defmacro with-world (&body body)
-  `(loop for i below (array-dimension *world* 0) do 
-	(loop for j below (array-dimension *world* 1) do
-	      ,@body)))
-
 (defun setup-world ()
-  (with-world
+  (do-world (i j)
     (setf (aref *world* i j) (make-instance 'tile
 					    :x (* j *scale*)
 					    :y (* i *scale*)
