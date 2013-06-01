@@ -25,7 +25,7 @@
   (do-world (i j)
     (draw (aref *world* i j)))
   (loop for entity in *entities* do
-	(draw-residencial entity)))
+	(draw-residential entity)))
 
 (defun render ()
   (render-step)
@@ -36,7 +36,7 @@
   (case key
     (:sdl-key-x (reset))
     (:sdl-key-d (setf *cursor* :dozer))
-    (:sdl-key-r (setf *cursor* :residencial))
+    (:sdl-key-r (setf *cursor* :residential))
     (:sdl-key-t (setf *cursor* :road))))
 
 (defun handle-mouse ()
@@ -48,8 +48,8 @@
        (play-sound :dozer))
       (:road
        (simple-tile (sdl:mouse-x) (sdl:mouse-y) :road))
-      (:residencial
-       (unless (residencial (sdl:mouse-x) (sdl:mouse-y))
+      (:residential
+       (unless (residential (sdl:mouse-x) (sdl:mouse-y))
 	(play-sound :bop))))))
 
 (defun cursor ()
@@ -58,7 +58,7 @@
       (case *cursor*
 	(:dozer
 	 (sdl:draw-rectangle-* tile-x tile-y 20 20 :color sdl:*white*))
-	(:residencial
+	(:residential
 	 (sdl:draw-rectangle-* tile-x tile-y  60 60 :color sdl:*blue*))
 	(:road
 	 (sdl:draw-rectangle-* tile-x tile-y 20 20 :color sdl:*black*))))))

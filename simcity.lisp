@@ -77,7 +77,7 @@
 							  :color (getf *tiles* tile)
 							  :tile-type tile)))))
 
-(defclass residencial ()
+(defclass residential ()
   ((tiles :initarg :tiles
 	  :accessor tiles)
    (color :initarg :color
@@ -106,21 +106,21 @@
 (defun can-build? (tiles)
   (every #'(lambda (tile) (or (eql (tile-type tile) :forest) (eql (tile-type tile) :dirt))) tiles))
 
-(defun residencial (x y)
+(defun residential (x y)
   (let ((res nil))
     (multiple-value-bind (top-left-tile coord-x coord-y) (snap-to-tile x y)
       (setf res (get-n-tiles coord-x coord-y 8))
       (push top-left-tile res)
       (when (can-build? res)
 	(loop for tile in res do
-	      (setf (tile-type tile) :residencial)
+	      (setf (tile-type tile) :residential)
 	      (setf (color tile) (getf *tiles* :dirt)))
-	(push (make-instance 'residencial :tiles res
+	(push (make-instance 'residential :tiles res
 			     :color sdl:*blue*
 			     :top-left top-left-tile) *entities*)))))
 
-(defun draw-residencial (residencial)
-  (with-slots (top-left color tiles) residencial
+(defun draw-residential (residential)
+  (with-slots (top-left color tiles) residential
     (loop for tile in tiles do
 	  (draw tile))
     (sdl:draw-rectangle-* (x top-left) (y top-left) 60 60 :color color)))
