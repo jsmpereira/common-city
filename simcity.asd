@@ -6,8 +6,8 @@
 
 (asdf:defsystem #:simcity
   :serial t
-  :description "Describe simcity here"
-  :author "Your Name <your.name@example.com>"
+  :description "(Very early) Beginnings of a Simcity clone. Gamedev Sundays."
+  :author "Jose Santos Martins Pereira <jsmpereira@gmail.com>"
   :license "Specify license here"
   :depends-on (#:lispbuilder-sdl
 	       #:lispbuilder-sdl-mixer)
