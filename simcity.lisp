@@ -28,12 +28,20 @@
    :size *tile-size*
    :tile-type :dirt))
 
+(defclass residential ()
+  ((tiles :initarg :tiles
+	  :accessor tiles)
+   (color :initarg :color
+	  :accessor color)
+   (top-left :initarg :top-left
+	     :accessor top-left)))
+
 (defmethod print-object ((object tile) stream)
   (print-unreadable-object (object stream :type t)
     (with-slots (x y size color size tile-type) object
       (format stream "x: ~a y: ~a color: ~a size: ~a type: ~a" x y color size tile-type))))
 
-(defgeneric draw (tile &key scale))
+(defgeneric draw (entity &key scale))
 
 (defmethod draw ((tile tile) &key (scale 1))
   (with-slots (x y size color tile-type) tile
@@ -41,6 +49,13 @@
     (sdl:draw-line-* x y x y :color sdl:*black*)
     (when (equal tile-type :road)
       (sdl:draw-line-* (+ x (/ size 2)) (+ y (/ size 4)) (+ x (/ size 2)) y :color sdl:*white*))))
+
+(defmethod draw ((residential residential) &key scale)
+  (declare (ignore scale))
+  (with-slots (top-left color tiles) residential
+    (loop for tile in tiles do
+	  (draw tile))
+    (sdl:draw-rectangle-* (x top-left) (y top-left) 60 60 :color color)))
 
 (defmacro do-world ((i j) &body body)
   `(loop for ,i below (array-dimension *world* 0)
@@ -77,14 +92,6 @@
 							  :color (getf *tiles* tile)
 							  :tile-type tile)))))
 
-(defclass residential ()
-  ((tiles :initarg :tiles
-	  :accessor tiles)
-   (color :initarg :color
-	  :accessor color)
-   (top-left :initarg :top-left
-	     :accessor top-left)))
-
 (defun get-n-coords (x y n)
   (loop for i from 0 below (sqrt n) do
 	(loop for j from 0 below (sqrt n)
@@ -118,12 +125,6 @@
 	(push (make-instance 'residential :tiles res
 			     :color sdl:*blue*
 			     :top-left top-left-tile) *entities*)))))
-
-(defun draw-residential (residential)
-  (with-slots (top-left color tiles) residential
-    (loop for tile in tiles do
-	  (draw tile))
-    (sdl:draw-rectangle-* (x top-left) (y top-left) 60 60 :color color)))
 
 (defun setup-world ()
   (do-world (i j)

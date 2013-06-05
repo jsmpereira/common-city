@@ -25,7 +25,7 @@
   (do-world (i j)
     (draw (aref *world* i j)))
   (loop for entity in *entities* do
-	(draw-residential entity)))
+	(draw entity)))
 
 (defun render ()
   (render-step)
