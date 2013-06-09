@@ -6,6 +6,9 @@ http://www.youtube.com/watch?v=SNxaLiwHy50
 
 Controls:
 
-- R -> Residencial Area
+- R -> Residencial Zone
+- C -> Commercial Zone
 - D -> Dozer
 - T -> Road
+- X -> Reset world
+- Q -> Quit
