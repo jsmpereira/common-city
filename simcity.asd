@@ -10,6 +10,7 @@
   :author "Jose Santos Martins Pereira <jsmpereira@gmail.com>"
   :license "Specify license here"
   :depends-on (#:lispbuilder-sdl
+	       #:lispbuilder-sdl-image
 	       #:lispbuilder-sdl-mixer)
   :components ((:file "package")
                (:file "simcity")

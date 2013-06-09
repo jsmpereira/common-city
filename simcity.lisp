@@ -4,62 +4,125 @@
 
 ;;; "simcity" goes here. Hacks and glory await!
 
-(defparameter *entities* nil)
+(defparameter *entities* (make-hash-table :test #'equal))
 
-(defparameter *tile-size* 20)
+(defparameter *tile-size* 16)
 (defparameter *tiles* `(:dirt ,(sdl:color :r 150 :g 100 :b 50)
 			      :forest ,(sdl:color :r 1 :g 100 :b 0)
-			      :residencial ,(sdl:color :r 24 :g 63 :b 219)
+			      :residential ,(sdl:color :r 0 :g 230 :b 0)
+			      :commercial ,(sdl:color :r 102 :g 102 :b 230)
 			      :road ,(sdl:color :r 0 :g 0 :b 0)))
-(defparameter *world* nil)
 
-(defclass tile ()
+(defclass point ()
   ((x :initarg :x
       :accessor x)
    (y :initarg :y
-      :accessor y)
+      :accessor y)))
+
+(defclass tile ()
+  ((coords :initarg :coords
+	   :accessor coords
+	   :type 'point
+	   :documentation "Top left (x,y) tuple.")
    (size :initarg :size
 	 :accessor size)
    (color :initarg :color
 	  :accessor color)
    (tile-type :initarg :tile-type
-	      :accessor tile-type))
+	      :accessor tile-type)
+   (sprite-cell :initarg :sprite-cell
+		:accessor sprite-cell))
   (:default-initargs
-   :size *tile-size*
-   :tile-type :dirt))
+   :size 1
+   :color nil
+   :tile-type nil
+   :sprite-cell nil))
 
-(defclass residential ()
+(defclass 3x3 (tile)
   ((tiles :initarg :tiles
 	  :accessor tiles)
-   (color :initarg :color
-	  :accessor color)
-   (top-left :initarg :top-left
-	     :accessor top-left)))
+   (sprite-sheet :initarg :sprite-sheet
+		 :accessor sprite-sheet))
+  (:default-initargs
+   :tiles nil
+   :sprite-sheet nil
+   :size 9))
+
+(defmethod init-sprite ((3x3 3x3))
+  (with-slots (size tile-type sprite-sheet) 3x3
+    (let* ((total-size (* size *tile-size*))
+	   (sprite-cells (loop for y from 0 to total-size by *tile-size*
+			       append (loop for x from 0 to size by *tile-size*
+					    collect (list x y *tile-size* *tile-size*)))))
+      (setf sprite-sheet (sdl-image:load-image (getf *image-assets* tile-type)))
+      (setf (sdl:cells sprite-sheet) sprite-cells))))
+
+(defmethod initialize-instance :after ((3x3 3x3) &key)
+  (with-slots (tiles coords size tile-type) 3x3
+    (let ((rows (sqrt size)))
+      (loop for i below size
+	    for x = (floor (mod i rows))
+	    for y = 0 then (if (zerop x)
+			       (1+ y)
+			       y)
+	    for tile-coords = (make-instance 'point :x (+ x (x coords)) :y (+ y (y coords)))
+	    do (push (make-instance 'tile :coords tile-coords :tile-type tile-type
+				    :sprite-cell i)
+		     tiles)))
+    (init-sprite 3x3)))
 
 (defmethod print-object ((object tile) stream)
   (print-unreadable-object (object stream :type t)
-    (with-slots (x y size color size tile-type) object
-      (format stream "x: ~a y: ~a color: ~a size: ~a type: ~a" x y color size tile-type))))
+    (with-slots (coords color size tile-type) object
+      (format stream "x: ~A y: ~A color: ~A size: ~A type: ~A" (x coords) (y coords) color size tile-type))))
 
-(defgeneric draw (entity &key scale))
+(defgeneric draw (entity &key &allow-other-keys))
 
-(defmethod draw ((tile tile) &key (scale 1))
-  (with-slots (x y size color tile-type) tile
-    (sdl:draw-box-* x y (* size scale) (* size scale) :color color)
-    (sdl:draw-line-* x y x y :color sdl:*black*)
-    (when (equal tile-type :road)
-      (sdl:draw-line-* (+ x (/ size 2)) (+ y (/ size 4)) (+ x (/ size 2)) y :color sdl:*white*))))
+(defmethod draw ((tile tile) &key sprite-sheet)
+  (with-slots (coords size color tile-type sprite-cell) tile
+    (with-slots (x y) coords
+      (let ((size (* size *tile-size*))
+	    (x (* x *tile-size*))
+	    (y (* y *tile-size*)))
+	(when color
+	  (sdl:draw-box-* x y size size :color color))
+	(sdl:draw-line-* x y x y :color sdl:*black*)
+	(when sprite-sheet
+	  (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell))
+	(when (equal tile-type :road)
+	  (sdl:draw-line-* (+ x (/ size 2)) (+ y (/ size 4)) (+ x (/ size 2)) y :color sdl:*white*))))))
 
-(defmethod draw ((residential residential) &key scale)
-  (declare (ignore scale))
-  (with-slots (top-left color tiles) residential
+(defmethod draw ((3x3 3x3) &key)
+  (with-slots (tiles sprite-sheet) 3x3
     (loop for tile in tiles do
-	  (draw tile))
-    (sdl:draw-rectangle-* (x top-left) (y top-left) 60 60 :color color)))
+	  (draw tile :sprite-sheet sprite-sheet))))
+
+(defun genhash (&rest rest)
+  "Generate hash key based on passed arguments."
+  (format nil "~{~a~^,~}" rest))
+
+(defun can-build-p (tiles)
+  (let ((ents (loop for tile in tiles
+		    collect (gethash (genhash (x (coords tile)) (y (coords tile))) *entities*))))
+    (every #'(lambda (tile) (or (eql (tile-type tile) :forest) (eql (tile-type tile) :dirt))) ents)))
+
+(defgeneric build (entity))
+
+(defmethod build ((3x3 3x3))
+  (with-slots (tiles coords) 3x3
+    (when (can-build-p tiles)
+      (loop for tile in tiles
+	    do (setf (gethash (genhash (x (coords tile)) (y (coords tile))) *entities*) tile))
+      (setf (gethash (genhash (x coords) (y coords)) *entities*) 3x3))))
+
+(defun build-3x3 (x y tile-type)
+  (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
+    (declare (ignore hashval))
+    (build (make-instance '3x3 :coords (make-instance 'point :x norm-x :y norm-y) :tile-type tile-type))))
 
 (defmacro do-world ((i j) &body body)
-  `(loop for ,i below (array-dimension *world* 0)
-	 do (loop for ,j below (array-dimension *world* 1)
+  `(loop for ,i below (/ *screen-height* *tile-size*)
+	 do (loop for ,j below (/ *screen-width* *tile-size*)
 		  do ,@body)))
 
 (defun random-tile ()
@@ -68,73 +131,26 @@
 	     collect i)))
 
 (defun snap-to-tile (x y)
-  (let ((tile nil)
-	(coord-x nil)
-	(coord-y nil))
-    (do-world (i j)
-      (with-accessors ((tile-x x) (tile-y y)) (aref *world* i j)
-	(when (tile-bounds tile-x tile-y x y)
-	  (setf tile (aref *world* i j))
-	  (setf coord-x i)
-	  (setf coord-y j))))
-    (values tile coord-x coord-y)))
-
-(defun tile-bounds (tile-x tile-y x y)
-  (and (>= x tile-x) (<= x (+ tile-x *tile-size*))
-       (>= y tile-y) (<= y (+ tile-y *tile-size*))))
+  (let ((norm-x (/ (- x (mod x *tile-size*)) *tile-size*))
+	(norm-y (/ (- y (mod y *tile-size*)) *tile-size*)))
+    (values (gethash (genhash norm-x norm-y) *entities*) norm-x norm-y)))
 
 (defun simple-tile (x y tile)
-  (multiple-value-bind (to-replace coord-x coord-y) (snap-to-tile x y)
-    (with-accessors ((tile-x x) (tile-y y)) to-replace
-      (setf (aref *world* coord-x coord-y) (make-instance 'tile
-							  :x tile-x
-							  :y tile-y
-							  :color (getf *tiles* tile)
-							  :tile-type tile)))))
-
-(defun get-n-coords (x y n)
-  (loop for i from 0 below (sqrt n) do
-	(loop for j from 0 below (sqrt n)
-	      collect i)))
-
-(defun get-n-tiles (x y n)
-  (let ((tiles nil))
-    (push (aref *world* (+ x 1) y) tiles)
-    (push (aref *world* (+ x 2) y) tiles)
-    ;line 2
-    (push (aref *world* x (+ y 1)) tiles)
-    (push (aref *world* (+ x 1) (+ y 1)) tiles)
-    (push (aref *world* (+ x 2) (+ y 1)) tiles)
-    ;line 3
-    (push (aref *world* x (+ y 2)) tiles)
-    (push (aref *world* (+ x 1) (+ y 2)) tiles)
-    (push (aref *world* (+ x 2) (+ y 2)) tiles)))
-
-(defun can-build? (tiles)
-  (every #'(lambda (tile) (or (eql (tile-type tile) :forest) (eql (tile-type tile) :dirt))) tiles))
-
-(defun residential (x y)
-  (let ((res nil))
-    (multiple-value-bind (top-left-tile coord-x coord-y) (snap-to-tile x y)
-      (setf res (get-n-tiles coord-x coord-y 8))
-      (push top-left-tile res)
-      (when (can-build? res)
-	(loop for tile in res do
-	      (setf (tile-type tile) :residential)
-	      (setf (color tile) (getf *tiles* :dirt)))
-	(push (make-instance 'residential :tiles res
-			     :color sdl:*blue*
-			     :top-left top-left-tile) *entities*)))))
+  (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
+    (declare (ignore hashval))
+    (setf (gethash (genhash norm-x norm-y) *entities*) 
+	  (make-instance 'tile :coords (make-instance 'point :x norm-x :y norm-y)
+			 :color (getf *tiles* tile) :tile-type tile))))
 
 (defun setup-world ()
   (do-world (i j)
-    (setf (aref *world* i j) (make-instance 'tile
-					    :x (* j *scale*)
-					    :y (* i *scale*)
-					    :color (getf *tiles* (random-tile))))))
+    (let ((coords (make-instance 'point :x j :y i))
+	  (tile (random-tile)))
+      (setf (gethash (genhash (x coords) (y coords)) *entities*)
+	    (make-instance 'tile :coords coords
+			   :color (getf *tiles* tile) :tile-type tile )))))
 
 (defun reset ()
-  (setf *world* (make-array '(30 40) :element-type 'tile))
-  (setup-world)
-  (setf *entities* nil))
+  (setf *entities* (make-hash-table :test #'equal))
+  (setup-world))
 

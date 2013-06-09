@@ -6,37 +6,40 @@
 (defparameter *screen-height* 600)
 (defparameter *bg-color* sdl:*black*)
 
-(defparameter *scale* 20)
-
 (defparameter *cursor* :dozer)
 
 (defparameter *assets-dir* 
   (merge-pathnames #P"assets/" simcity-config:*base-directory*))
 
+(defparameter *image-assets*
+  `(:residential ,(merge-pathnames "residential.png" *assets-dir*)
+		 :commercial ,(merge-pathnames "commercial.png" *assets-dir*)))
+
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
 	   :bop ,(merge-pathnames "bop.wav" *assets-dir*)))
+
+(defparameter *sprite-sheet* nil)
 
  (defun play-sound (asset)
    (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
      (sdl-mixer:play-sample sound)))
 
 (defun render-step ()
-  (do-world (i j)
-    (draw (aref *world* i j)))
-  (loop for entity in *entities* do
-	(draw entity)))
+  (loop for k being the hash-keys in *entities* using (hash-value v)
+	do (draw v)))
 
 (defun render ()
   (render-step)
-  (cursor)
-  (sdl:update-display))
+  (cursor))
 
 (defun handle-keys (key)
   (case key
+    (:sdl-key-q (sdl:push-quit-event))
     (:sdl-key-x (reset))
     (:sdl-key-d (setf *cursor* :dozer))
     (:sdl-key-r (setf *cursor* :residential))
+    (:sdl-key-c (setf *cursor* :commercial))
     (:sdl-key-t (setf *cursor* :road))))
 
 (defun handle-mouse ()
@@ -48,20 +51,24 @@
        (play-sound :dozer))
       (:road
        (simple-tile (sdl:mouse-x) (sdl:mouse-y) :road))
-      (:residential
-       (unless (residential (sdl:mouse-x) (sdl:mouse-y))
-	(play-sound :bop))))))
+      (t
+       (unless (build-3x3 (sdl:mouse-x) (sdl:mouse-y) *cursor*)
+	 (play-sound :bop))))))
 
 (defun cursor ()
   (let ((tile (snap-to-tile (sdl:mouse-x) (sdl:mouse-y))))
-    (with-accessors ((tile-x x) (tile-y y) (size size)) tile
-      (case *cursor*
-	(:dozer
-	 (sdl:draw-rectangle-* tile-x tile-y 20 20 :color sdl:*white*))
-	(:residential
-	 (sdl:draw-rectangle-* tile-x tile-y  60 60 :color sdl:*blue*))
-	(:road
-	 (sdl:draw-rectangle-* tile-x tile-y 20 20 :color sdl:*black*))))))
+    (when tile
+      (with-slots (x y) (coords tile)
+	(let ((x (* x *tile-size*))
+	      (y (* y *tile-size*)))
+	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
+	  (case *cursor*
+	    (:dozer
+	     (sdl:draw-rectangle-* x y *tile-size* *tile-size* :color sdl:*white*))
+	    (:road
+	     (sdl:draw-rectangle-* x y *tile-size* *tile-size* :color sdl:*black*))
+	    (t
+	     (sdl:draw-rectangle-* x y (* 3 *tile-size*) (* 3 *tile-size*) :color (getf *tiles* *cursor*)))))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)
@@ -73,14 +80,19 @@
       (setf (sdl:frame-rate) 30)
       (sdl-mixer:open-audio)
       (sdl:enable-key-repeat nil nil)
+      (setf sdl-cffi::*image-loaded-p* t) ; hack to load .png
+      (sdl:init-image :png)
       (reset)
       (sdl:with-events ()
-	(:quit-event () (sdl-mixer:close-audio) t)
+	(:quit-event ()
+		     (sdl-mixer:close-audio)
+		     (sdl:quit-image)
+		     t)
 	(:key-down-event (:key key)
 			 (handle-keys key))
 	(:mouse-motion-event (:state s :x-rel dx :y-rel dy :x x :y y))
 	(:mouse-button-up-event (:button button :state state :x x :y y)
-				;(handle-mouse state)
+					;(handle-mouse state)
 				)
 	(:idle ()
 	       (sdl:clear-display *bg-color*)
@@ -89,5 +101,6 @@
 		      (or swank::*emacs-connection* (swank::default-connection))))
 		 (when (and connection (not (eql swank:*communication-style* :spawn)))
 		   (swank::handle-requests connection t)))
-	       (render))))))
+	       (render)
+	       (sdl:update-display))))))
 
