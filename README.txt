@@ -11,7 +11,7 @@ http://www.youtube.com/watch?v=SNxaLiwHy50
 
 Controls:
 
-- R -> Residencial Zone
+- R -> Residential Zone
 - C -> Commercial Zone
 - D -> Dozer
 - T -> Road
