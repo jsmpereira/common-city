@@ -1,10 +1,8 @@
-;;;; simcity.asd
 (defpackage #:simcity-config (:export #:*base-directory*))
 (defparameter simcity-config:*base-directory* 
   (make-pathname :name nil :type nil :defaults *load-truename*))
 
-
-(asdf:defsystem #:simcity
+(asdf:defsystem #:common-city
   :serial t
   :description "(Very early) Beginnings of a Simcity clone. Gamedev Sundays."
   :author "Jose Santos Martins Pereira <jsmpereira@gmail.com>"
@@ -13,6 +11,6 @@
 	       #:lispbuilder-sdl-image
 	       #:lispbuilder-sdl-mixer)
   :components ((:file "package")
-               (:file "simcity")
+               (:file "common-city")
 	       (:file "render")))
 

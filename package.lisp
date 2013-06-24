@@ -1,5 +1,6 @@
 ;;;; package.lisp
 
-(defpackage #:simcity
-  (:use #:cl))
+(defpackage #:common-city
+  (:use #:cl)
+  (:export #:main))
 

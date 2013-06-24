@@ -1,8 +1,4 @@
-;;;; simcity.lisp
-
-(in-package #:simcity)
-
-;;; "simcity" goes here. Hacks and glory await!
+(in-package #:common-city)
 
 (defparameter *entities* (make-hash-table :test #'equal))
 

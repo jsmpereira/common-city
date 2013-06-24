@@ -1,6 +1,6 @@
 ;;; -*- Mode: Lisp -*-
 
-(in-package :simcity)
+(in-package :common-city)
 
 (defparameter *screen-width* 800)
 (defparameter *screen-height* 600)
