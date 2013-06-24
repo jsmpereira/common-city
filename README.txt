@@ -1,6 +1,5 @@
-
 This repository was created for participation in Lisp in Summer Projects (http://lispinsummerprojects.org/).
-Development between June 24th and Sept 30th, 2013 will be done here and frequently merged back to https://github.com/jsmpereira/cl-simcity.
+Between June 24th and Sept 30th, 2013, development will be done here and frequently merged back to https://github.com/jsmpereira/cl-simcity.
 After Sept 30th, development will continue on the original repository.
 
 =====================
