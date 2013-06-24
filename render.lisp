@@ -11,9 +11,10 @@
 (defparameter *assets-dir* 
   (merge-pathnames #P"assets/" simcity-config:*base-directory*))
 
-(defparameter *image-assets*
-  `(:residential ,(merge-pathnames "residential.png" *assets-dir*)
-		 :commercial ,(merge-pathnames "commercial.png" *assets-dir*)))
+(defparameter *sprite-assets*
+  `(:residential (,(merge-pathnames "residential.png" *assets-dir*) 9)
+		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9)
+		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)))
 
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
@@ -82,6 +83,7 @@
       (sdl:enable-key-repeat nil nil)
       (setf sdl-cffi::*image-loaded-p* t) ; hack to load .png
       (sdl:init-image :png)
+      (init-sprites)
       (reset)
       (sdl:with-events ()
 	(:quit-event ()
