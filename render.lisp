@@ -2,8 +2,8 @@
 
 (in-package :common-city)
 
-(defparameter *screen-width* 800)
-(defparameter *screen-height* 600)
+(defparameter *screen-width* 1024)
+(defparameter *screen-height* 768)
 (defparameter *bg-color* sdl:*black*)
 
 (defparameter *cursor* :dozer)
@@ -14,7 +14,8 @@
 (defparameter *sprite-assets*
   `(:residential (,(merge-pathnames "residential.png" *assets-dir*) 9)
 		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9)
-		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)))
+		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)
+		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)))
 
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
@@ -48,18 +49,18 @@
 	     )
     (case *cursor*
       (:dozer
-       (simple-tile (sdl:mouse-x) (sdl:mouse-y) :dirt)
+       (build-tile (sdl:mouse-x) (sdl:mouse-y) :dirt)
        (play-sound :dozer))
       (:road
-       (simple-tile (sdl:mouse-x) (sdl:mouse-y) :road))
+       (build-tile (sdl:mouse-x) (sdl:mouse-y) :road))
       (t
-       (unless (build-3x3 (sdl:mouse-x) (sdl:mouse-y) *cursor*)
+       (unless (build-tile (sdl:mouse-x) (sdl:mouse-y) *cursor*)
 	 (play-sound :bop))))))
 
 (defun cursor ()
   (let ((tile (snap-to-tile (sdl:mouse-x) (sdl:mouse-y))))
     (when tile
-      (with-slots (x y) (coords tile)
+      (with-slots (x y) tile
 	(let ((x (* x *tile-size*))
 	      (y (* y *tile-size*)))
 	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
@@ -69,7 +70,7 @@
 	    (:road
 	     (sdl:draw-rectangle-* x y *tile-size* *tile-size* :color sdl:*black*))
 	    (t
-	     (sdl:draw-rectangle-* x y (* 3 *tile-size*) (* 3 *tile-size*) :color (getf *tiles* *cursor*)))))))))
+	     (sdl:draw-rectangle-* x y (* 3 *tile-size*) (* 3 *tile-size*) :color sdl:*blue*))))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)
