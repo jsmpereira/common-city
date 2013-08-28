@@ -24,6 +24,7 @@
 			      :forest sprite-tile
 			      :residential complex-tile
 			      :commercial complex-tile
+			      :powerplant complex-tile
 			      :road sprite-tile))
 
 (defclass entity ()

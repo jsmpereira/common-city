@@ -13,6 +13,7 @@ Controls:
 
 - R -> Residential Zone
 - C -> Commercial Zone
+- P -> Power Plant
 - D -> Dozer
 - T -> Road
 - X -> Reset world
