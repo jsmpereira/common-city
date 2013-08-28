@@ -37,13 +37,17 @@
       (format stream "x: ~A y: ~A" x y))))
 
 (defclass sprite-tile (entity)
-  ((tile-type :initarg :tile-type :accessor tile-type)
+  ((parent :initarg :parent :accessor parent)
+   (action :initarg :action :accessor action)
+   (tile-type :initarg :tile-type :accessor tile-type)
    (sprite-cell :initarg :sprite-cell :accessor sprite-cell)
    (sprite-sheet :initarg :sprite-sheet :accessor sprite-sheet)
    (size))
   (:default-initargs
    :sprite-cell nil
-   :sprite-sheet nil))
+   :sprite-sheet nil
+   :parent nil
+   :action nil))
 
 (defmethod print-object ((object sprite-tile) stream)
   (print-unreadable-object (object stream :type t)
@@ -63,8 +67,8 @@
       (:dirt (progn
 	       (setf sprite-sheet (gethash :wilderness *sprites*))
 	       (setf sprite-cell 0)))
-      (:road (setf sprite-cell 2))))
-  (build entity))
+      (:road (setf sprite-cell 2)))
+    (build entity)))
 
 (defclass complex-tile (entity)
   ((size)
@@ -80,16 +84,29 @@
 
 (defmethod initialize-instance :after ((entity complex-tile) &key tile-type)
   (with-slots (x y size tiles sprite-sheet) entity
-    (let ((rows (sqrt size))
-	  (sprite-sheet (gethash tile-type *sprites*)))
-      (setf sprite-sheet sprite-sheet)
-      (loop for i below size
-	    for nx = (floor (mod i rows))
-	    for ny = 0 then (if (zerop nx)
-				(1+ ny)
-				ny)
-	    do (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y) :sprite-cell i :tile-type tile-type) tiles))))
-  (build entity))
+    (setf size (sprite-dimensions tile-type))
+    (when (can-build-p entity)
+      (let ((rows (sqrt size))
+	    (sprite-sheet (gethash tile-type *sprites*)))
+	(setf sprite-sheet sprite-sheet)
+	(loop for i below size
+	      for nx = (floor (mod i rows))
+	      for ny = 0 then (if (zerop nx)
+				  (1+ ny)
+				  ny)
+	      do (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
+				      :sprite-cell i :tile-type tile-type
+				      :parent entity) tiles))
+	(setf (action (nth (1- (ceiling (/ size 2))) tiles)) :blow)))))
+
+(defun with-tile-size-at (size x y)
+  (let ((rows (sqrt size)))
+    (loop for i below size
+	  for nx = (floor (mod i rows))
+	  for ny = 0 then (if (zerop nx)
+			      (1+ ny)
+			      ny)
+	  collect `(,(+ nx x) ,(+ ny y)))))
 
 (defun init-sprite (path size)
   (let* ((total-size (* size *tile-size*))
@@ -111,11 +128,7 @@
   (with-slots (x y size sprite-cell sprite-sheet tile-type) entity
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
-      ;; (when color
-      ;; 	(sdl:draw-box-* x y size size :color color))
-      (sdl:draw-line-* x y x y :color sdl:*black*)
-      (when sprite-sheet
-	(sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell))
+      (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell)
       (when (equal tile-type :road)
 	(setf sprite-cell (getf *road-mapping* (check-road entity) 2))))))
 
@@ -124,32 +137,64 @@
     (loop for tile in tiles do
 	  (draw tile))))
 
+(defun blow-up-p (tile)
+  (if (and (parent tile) (equal (action tile) :blow))
+      (remove-entity (parent tile))
+      (remove-entity tile)))
+
+(defgeneric can-build-p (entity)
+  (:documentation "Checks if an entity can be build."))
+
+(defmethod can-build-p ((entity sprite-tile))
+  (with-slots (x y tile-type) entity
+    (let* ((existing-tile (gethash (genhash x y) *entities*)))
+      (if existing-tile
+	  (or (eql tile-type :dirt) (member (tile-type existing-tile) '(:dirt :wilderness)))
+	  t))))
+
+(defmethod can-build-p ((entity complex-tile))
+  (with-slots (size x y) entity
+    (let* ((tile-coords (with-tile-size-at size x y))
+	   (existing-tiles (loop for coords in tile-coords
+				 collect (gethash (genhash (first coords) (second coords)) *entities*))))
+      (every #'can-build-p existing-tiles))))
+
 (defgeneric build (entity)
   (:documentation "Adds entity to the `*entities*' collection."))
 
-(defmethod build ((tile tile))
-  (with-slots (coords tile-type action) tile
-    (when (or (equal tile-type :dirt) (can-build-p (list tile)))
-      (let ((existing (gethash (genhash (x coords) (y coords)) *entities*)))
-	(unless (blow-up-p existing)
-	  (setf (gethash (genhash (x coords) (y coords)) *entities*) tile))))))
-
 (defmethod build ((entity sprite-tile))
-  (with-slots (x y tile-type) entity
-    (when (or (eql tile-type :wilderness) (can-build-p (list entity)))
+  (with-slots (x y) entity
+    (when (can-build-p entity)
       (setf (gethash (genhash x y) *entities*) entity))))
 
-(defmethod build ((entity complex-tile))
-  (with-slots (x y tiles) entity
-    (when (can-build-p tiles)
-      (loop for tile in tiles
-	    do (setf (gethash (genhash (x tile) (y tile)) *entities*) tile)
-	    finally (return t)))))
+(defgeneric remove-entity (entity)
+  (:documentation "Removing an entity means transforming into the base tile :dirt."))
+
+(defmethod remove-entity ((entity sprite-tile))
+  (with-slots (x y) entity
+    (build (make-instance 'sprite-tile :x x :y y :tile-type :dirt))))
+
+(defmethod remove-entity ((entity complex-tile))
+  (with-slots (tiles) entity
+    (mapc #'remove-entity tiles)))
+
+(defun dozer (x y)
+  (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
+    (declare (ignore hashval))
+    (let ((existing-tile (gethash (genhash norm-x norm-y) *entities*)))
+      (blow-up-p existing-tile))))
 
 (defun build-tile (x y tile-type)
+  "Create a tile instance dispatched on tile-type with normalized coords."
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
     (declare (ignore hashval))
     (make-instance (getf *tiles* tile-type) :x norm-x :y norm-y :tile-type tile-type)))
+
+(defclass point ()
+  ((x :initarg :x
+      :accessor x)
+   (y :initarg :y
+      :accessor y)))
 
 (defmethod cross ((entity entity))
   (with-slots (x y) entity
@@ -171,30 +216,20 @@
   "Generate hash key based on passed arguments."
   (format nil "~{~a~^,~}" rest))
 
-(defun can-build-p (tiles)
-  (let ((ents (loop for tile in tiles
-		    collect (gethash (genhash (x tile) (y tile)) *entities*))))
-    (every #'(lambda (tile) (or (eql (tile-type tile) :wilderness) (eql (tile-type tile) :dirt))) ents)))
-
-(defun blow-up-p (tile)
-  (when (and (parent tile) (equal (action tile) :blow))
-    (loop for tl in (tiles (parent tile)) do
-	  (remhash (gethash (genhash (x (coords tl)) (y (coords tl))) *entities*) *entities*))))
-
 (defmacro do-world ((i j) &body body)
   `(loop for ,i below (/ *screen-height* *tile-size*)
 	 do (loop for ,j below (/ *screen-width* *tile-size*)
 		  do ,@body)))
 
 (defun snap-to-tile (x y)
+  "Adjust mouse coords to tile coords."
   (let ((norm-x (/ (- x (mod x *tile-size*)) *tile-size*))
 	(norm-y (/ (- y (mod y *tile-size*)) *tile-size*)))
     (values (gethash (genhash norm-x norm-y) *entities*) norm-x norm-y)))
 
 (defun setup-world ()
   (do-world (i j)
-    (setf (gethash (genhash j i) *entities*)
-	  (make-instance 'sprite-tile :x j :y i :tile-type :wilderness))))
+    (build (make-instance 'sprite-tile :x j :y i :tile-type :wilderness))))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))

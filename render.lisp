@@ -17,6 +17,14 @@
 		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)
 		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)))
 
+(defun sprite-dimensions (key)
+  "Return sprite dimensions."
+  (multiple-value-bind (key value tail) (get-properties *sprite-assets* `(,key))
+    (declare (ignore key tail))
+    (if value
+      (second value)
+      1)))
+
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
 	   :bop ,(merge-pathnames "bop.wav" *assets-dir*)))
@@ -49,20 +57,20 @@
 	     )
     (case *cursor*
       (:dozer
-       (build-tile (sdl:mouse-x) (sdl:mouse-y) :dirt)
+       (dozer (sdl:mouse-x) (sdl:mouse-y))
        (play-sound :dozer))
       (:road
        (build-tile (sdl:mouse-x) (sdl:mouse-y) :road))
       (t
-       (unless (build-tile (sdl:mouse-x) (sdl:mouse-y) *cursor*)
-	 (play-sound :bop))))))
+       (build-tile (sdl:mouse-x) (sdl:mouse-y) *cursor*)))))
 
 (defun cursor ()
   (let ((tile (snap-to-tile (sdl:mouse-x) (sdl:mouse-y))))
     (when tile
       (with-slots (x y) tile
 	(let ((x (* x *tile-size*))
-	      (y (* y *tile-size*)))
+	      (y (* y *tile-size*))
+	      (dimensions (floor (* (sqrt (sprite-dimensions *cursor*)) *tile-size*))))
 	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
 	  (case *cursor*
 	    (:dozer
@@ -70,7 +78,7 @@
 	    (:road
 	     (sdl:draw-rectangle-* x y *tile-size* *tile-size* :color sdl:*black*))
 	    (t
-	     (sdl:draw-rectangle-* x y (* 3 *tile-size*) (* 3 *tile-size*) :color sdl:*blue*))))))))
+	     (sdl:draw-rectangle-* x y dimensions dimensions :color sdl:*blue*))))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)
