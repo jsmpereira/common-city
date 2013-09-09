@@ -82,6 +82,28 @@
       (:road (setf sprite-cell 2)))
     (build entity)))
 
+(defclass animated-tile (sprite-tile)
+  ((first-frame :initarg :first-frame :accessor first-frame)
+   (current-frame :initarg :current-frame :accessor current-frame)
+   (max-frames :initarg :max-frames :accessor max-frames)
+   (frame-increment :initarg :frame-increment :accessor frame-increment)
+   (frame-rate :initarg :frame-rate :accessor frame-rate)
+   (last-tick :initarg :last-tick :accessor last-tick)
+   (repeat-p :initarg :repeat-p :accessor repeat-p)
+   (running-p :initarg :running-p :accessor running-p))
+  (:default-initargs
+   :first-frame 0
+   :current-frame 0
+   :frame-increment 1
+   :frame-rate 100
+   :last-tick 0
+   :repeat-p t
+   :running-p t))
+
+(defmethod initialize-instance :after ((entity animated-tile) &key)
+  (with-slots (first-frame current-frame) entity
+    (setf current-frame first-frame)))
+
 (defclass complex-tile (entity)
   ((tiles :initarg :tiles :accessor tiles :documentation "List of tiles for this entity."))
   (:default-initargs
@@ -109,8 +131,7 @@
 	      do (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
 				      :sprite-cell i :tile-type tile-type
 				      :parent entity) tiles))
-	(setf (action (nth action-cell tiles)) :blow))
-      (build entity))))
+	(setf (action (nth action-cell tiles)) :blow)))))
 
 (defun with-tile-size-at (size x y)
   (let ((rows (sqrt size)))
@@ -154,6 +175,14 @@
       (when (equal tile-type :road)
 	(setf sprite-cell (getf *road-mapping* (check-road entity) 2))))))
 
+(defmethod draw ((entity animated-tile))
+  (with-slots (x y sprite-sheet current-frame repeat-p running-p) entity
+    (let ((x (* x *tile-size*))
+	  (y (* y *tile-size*)))
+      (sdl:draw-surface-at-* sprite-sheet x y :cell current-frame)
+      (when running-p
+	(animate entity)))))
+
 (defmethod draw ((entity complex-tile))
   (with-slots (tiles) entity
     (loop for tile in tiles do
@@ -172,7 +201,7 @@
   (with-slots (x y tile-type) entity
     (let* ((existing-tile (gethash (genhash x y) *entities*)))
       (if existing-tile
-	  (or (eql tile-type :dirt) (member (tile-type existing-tile) '(:dirt :wilderness)))
+	  (or (member tile-type '(:dirt :animation-sheet)) (member (tile-type existing-tile) '(:dirt :wilderness :animation-sheet)))
 	  t))))
 
 (defmethod can-build-p ((entity complex-tile))
@@ -181,6 +210,19 @@
 	   (existing-tiles (loop for coords in tile-coords
 				 collect (gethash (genhash (first coords) (second coords)) *entities*))))
       (every #'can-build-p existing-tiles))))
+
+(defgeneric animate (entity)
+  (:documentation "Handle sprite animation."))
+
+(defmethod animate ((entity animated-tile))
+  (with-slots (first-frame last-tick frame-rate current-frame frame-increment max-frames running-p repeat-p) entity
+    (when (> (sdl:system-ticks) (+ last-tick frame-rate))
+      (setf last-tick (sdl:system-ticks))
+      (incf current-frame frame-increment)
+      (when (= current-frame (1- (+ first-frame max-frames)))
+	(if repeat-p
+	    (setf current-frame first-frame)
+	    (setf running-p nil))))))
 
 (defgeneric build (entity)
   (:documentation "Adds entity to the `*entities*' collection."))
@@ -194,6 +236,9 @@
     (with-slots (x y) entity
       (setf (gethash (genhash x y) *entities*) entity))))
 
+(defmethod build ((entity animated-tile))
+  (call-next-method))
+
 (defgeneric remove-entity (entity)
   (:documentation "Removing an entity means transforming into the base tile :dirt."))
 
@@ -203,7 +248,10 @@
 
 (defmethod remove-entity ((entity complex-tile))
   (with-slots (tiles) entity
-    (mapc #'remove-entity tiles)))
+    (mapc #'(lambda (tile)
+	      (with-slots (x y) tile
+		(build (make-instance 'animated-tile :tile-type :animation-sheet
+				      :x x :y y :first-frame 33 :max-frames 8 :repeat-p nil)))) tiles)))
 
 (defun dozer (x y)
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)

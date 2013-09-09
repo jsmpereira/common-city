@@ -21,7 +21,8 @@
 		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9)
 		 :powerplant (,(merge-pathnames "powerplant.png" *assets-dir*) 16)
 		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)
-		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)))
+		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)
+		 :animation-sheet (,(merge-pathnames "animation-sheet.png" *assets-dir*) 41)))
 
 (defparameter *button-assets*
   `(:powerplant-btn-up (,(merge-pathnames "powerplant-btn-up.png" *assets-dir*))
