@@ -128,9 +128,12 @@
 	      for ny = 0 then (if (zerop nx)
 				  (1+ ny)
 				  ny)
-	      do (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
-				      :sprite-cell i :tile-type tile-type
-				      :parent entity) tiles))
+	      do (if (and (= i 9) (eql tile-type :powerplant))
+		     (push (make-instance 'animated-tile :tile-type :animation-sheet
+					  :x (+ nx x) :y (+ ny y) :first-frame 4 :max-frames 4 :repeat-p t :parent entity) tiles)
+		     (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
+					  :sprite-cell i :tile-type tile-type
+					  :parent entity) tiles)))
 	(setf (action (nth action-cell tiles)) :blow)))))
 
 (defun with-tile-size-at (size x y)
@@ -251,7 +254,7 @@
     (mapc #'(lambda (tile)
 	      (with-slots (x y) tile
 		(build (make-instance 'animated-tile :tile-type :animation-sheet
-				      :x x :y y :first-frame 33 :max-frames 8 :repeat-p nil)))) tiles)))
+				      :x x :y y :first-frame 16 :max-frames 8 :repeat-p nil)))) tiles)))
 
 (defun dozer (x y)
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
