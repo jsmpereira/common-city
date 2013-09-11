@@ -19,7 +19,7 @@
 (defparameter *sprite-assets*
   `(:residential (,(merge-pathnames "residential.png" *assets-dir*) 9)
 		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9)
-		 :powerplant (,(merge-pathnames "powerplant.png" *assets-dir*) 16)
+		 :nuclear (,(merge-pathnames "nuclear.png" *assets-dir*) 16)
 		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)
 		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)
 		 :animation-sheet (,(merge-pathnames "animation-sheet.png" *assets-dir*) 41)))
@@ -68,7 +68,7 @@
     (:sdl-key-d (setf *cursor* :dozer))
     (:sdl-key-r (setf *cursor* :residential))
     (:sdl-key-c (setf *cursor* :commercial))
-    (:sdl-key-p (setf *cursor* :powerplant))
+    (:sdl-key-p (setf *cursor* :nuclear))
     (:sdl-key-t (setf *cursor* :road))))
 
 (defun handle-mouse (x y)

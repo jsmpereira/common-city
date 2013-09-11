@@ -25,7 +25,7 @@
 			      :forest sprite-tile
 			      :residential complex-tile
 			      :commercial complex-tile
-			      :powerplant complex-tile
+			      :nuclear complex-tile
 			      :road sprite-tile))
 
 (defclass entity ()
@@ -128,7 +128,7 @@
 	      for ny = 0 then (if (zerop nx)
 				  (1+ ny)
 				  ny)
-	      do (if (and (= i 9) (eql tile-type :powerplant))
+	      do (if (and (= i 9) (eql tile-type :nuclear))
 		     (push (make-instance 'animated-tile :tile-type :animation-sheet
 					  :x (+ nx x) :y (+ ny y) :first-frame 4 :max-frames 4 :repeat-p t :parent entity) tiles)
 		     (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
