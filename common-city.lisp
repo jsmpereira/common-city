@@ -26,7 +26,12 @@
 			      :residential complex-tile
 			      :commercial complex-tile
 			      :nuclear complex-tile
-			      :road sprite-tile))
+			      :road sprite-tile
+			      :wire sprite-tile
+			      :garden animated-tile
+			      :industrial complex-tile
+			      :fire-department complex-tile
+			      :police-department complex-tile))
 
 (defclass entity ()
   ((x :initarg :x :accessor x :documentation "X coordinate.")
@@ -79,7 +84,7 @@
       (:dirt (progn
 	       (setf sprite-sheet (gethash :wilderness *sprites*))
 	       (setf sprite-cell 0)))
-      (:road (setf sprite-cell 2)))
+      ((:road :wire) (setf sprite-cell 2)))
     (build entity)))
 
 (defclass animated-tile (sprite-tile)
@@ -101,8 +106,18 @@
    :running-p t))
 
 (defmethod initialize-instance :after ((entity animated-tile) &key)
-  (with-slots (first-frame current-frame) entity
+  (with-slots (sprite-sheet sprite-cell tile-type first-frame current-frame max-frames running-p) entity
+    (setf sprite-sheet (gethash :animation-sheet *sprites*))
+    (case tile-type
+      (:garden (progn
+		 (setf max-frames 4)
+		 (if (zerop (mod (random 4) 5))
+		     (setf first-frame 4)
+		     (progn
+		       (setf running-p nil)
+		       (setf first-frame (random 3)))))))
     (setf current-frame first-frame)))
+
 
 (defclass complex-tile (entity)
   ((tiles :initarg :tiles :accessor tiles :documentation "List of tiles for this entity."))
@@ -129,8 +144,8 @@
 				  (1+ ny)
 				  ny)
 	      do (if (and (= i 9) (eql tile-type :nuclear))
-		     (push (make-instance 'animated-tile :tile-type :animation-sheet
-					  :x (+ nx x) :y (+ ny y) :first-frame 4 :max-frames 4 :repeat-p t :parent entity) tiles)
+		     (push (make-instance 'animated-tile :tile-type :nuclear
+					  :x (+ nx x) :y (+ ny y) :first-frame 8 :max-frames 4 :repeat-p t :parent entity) tiles)
 		     (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
 					  :sprite-cell i :tile-type tile-type
 					  :parent entity) tiles)))
@@ -157,7 +172,7 @@
 (defun init-sprites ()
   (loop for indicator in *sprite-assets* by #'cddr do
 	(multiple-value-bind (key value tail) (get-properties *sprite-assets* `(,indicator))
-	  (setf (gethash indicator *sprites*) (init-sprite (first value) (second value))))))
+	  (setf (gethash indicator *sprites*) (init-sprite (first value) (third value))))))
 
 (defun init-buttons ()
   (loop for indicator in *button-assets* by #'cddr do
@@ -175,11 +190,12 @@
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
       (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell)
-      (when (equal tile-type :road)
-	(setf sprite-cell (getf *road-mapping* (check-road entity) 2))))))
+      (when (member tile-type '(:road :wire))
+	(unless (check-wire-over-road entity)
+	  (setf sprite-cell (getf *road-mapping* (check-road entity) 2)))))))
 
 (defmethod draw ((entity animated-tile))
-  (with-slots (x y sprite-sheet current-frame repeat-p running-p) entity
+  (with-slots (x y sprite-sheet current-frame running-p) entity
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
       (sdl:draw-surface-at-* sprite-sheet x y :cell current-frame)
@@ -201,10 +217,28 @@
   (:documentation "Checks if an entity can be build."))
 
 (defmethod can-build-p ((entity sprite-tile))
-  (with-slots (x y tile-type) entity
+  "FIXME"
+  (with-slots (x y sprite-cell tile-type sprite-sheet) entity
     (let* ((existing-tile (gethash (genhash x y) *entities*)))
       (if existing-tile
-	  (or (member tile-type '(:dirt :animation-sheet)) (member (tile-type existing-tile) '(:dirt :wilderness :animation-sheet)))
+	  (cond
+	    ((member (tile-type existing-tile) '(:dirt :wilderness :explosion)) t)
+	    ((member tile-type '(:dirt :explosion)) t)
+	    ((and (eql (tile-type existing-tile) :wire) (eql tile-type :road))
+	     (progn
+	       (setf (sprite-sheet existing-tile) sprite-sheet)
+	       (setf (tile-type existing-tile) :road)
+	       (case (sprite-cell existing-tile)
+		 (2 (setf (sprite-cell existing-tile) 14))
+		 (3 (setf (sprite-cell existing-tile) 13)))
+	       nil))
+	    ((and (member (tile-type existing-tile) '(:road)) (member tile-type '(:wire)))
+	     (progn
+	       (case (sprite-cell existing-tile)
+		 (2 (setf (sprite-cell existing-tile) 13))
+		 (3 (setf (sprite-cell existing-tile) 14)))
+	       nil))
+	    (t nil))
 	  t))))
 
 (defmethod can-build-p ((entity complex-tile))
@@ -253,8 +287,8 @@
   (with-slots (tiles) entity
     (mapc #'(lambda (tile)
 	      (with-slots (x y) tile
-		(build (make-instance 'animated-tile :tile-type :animation-sheet
-				      :x x :y y :first-frame 16 :max-frames 8 :repeat-p nil)))) tiles)))
+		(make-instance 'animated-tile :tile-type :explosion
+			       :x x :y y :first-frame 20 :max-frames 8 :repeat-p nil))) tiles)))
 
 (defun dozer (x y)
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
@@ -287,8 +321,14 @@
     (let ((tiles (loop for c in (cross entity)
 		       collect (gethash (genhash (x c) (y c)) *entities*))))
       (parse-integer (format nil "~{~A~}" (mapcar #'(lambda (x)
-						      (if (and x (equal (tile-type x) :road)) 1 0)) tiles))
+						      (if (and x (member (tile-type x) '(:road :wire))
+							       (or (eql (tile-type x) (tile-type entity))
+								   (member (sprite-cell x) '(13 14)))) 1 0)) tiles))
 		     :radix 2))))
+
+(defun check-wire-over-road (entity)
+  (with-slots (x y tile-type sprite-cell) entity
+    (and (member sprite-cell '(13 14)) (eql tile-type :road))))
 
 (defun genhash (&rest rest)
   "Generate hash key based on passed arguments."

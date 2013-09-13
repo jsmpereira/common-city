@@ -17,12 +17,17 @@
   (merge-pathnames #P"assets/" simcity-config:*base-directory*))
 
 (defparameter *sprite-assets*
-  `(:residential (,(merge-pathnames "residential.png" *assets-dir*) 9)
-		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9)
-		 :nuclear (,(merge-pathnames "nuclear.png" *assets-dir*) 16)
-		 :road (,(merge-pathnames "road.png" *assets-dir*) 15)
-		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 38)
-		 :animation-sheet (,(merge-pathnames "animation-sheet.png" *assets-dir*) 41)))
+  `(:residential (,(merge-pathnames "residential-full.png" *assets-dir*) 9 165)
+		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9 9)
+		 :nuclear (,(merge-pathnames "nuclear.png" *assets-dir*) 16 16)
+		 :road (,(merge-pathnames "road.png" *assets-dir*) 1 15)
+		 :wire (,(merge-pathnames "wire.png" *assets-dir*) 1 13)
+		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 1 38)
+		 :garden (,(merge-pathnames "garden.png" *assets-dir*) 1 4)
+		 :animation-sheet (,(merge-pathnames "animation-sheet.png" *assets-dir*) 1 41)
+		 :industrial (,(merge-pathnames "industrial.png" *assets-dir*) 9 9)
+		 :fire-department (,(merge-pathnames "fire-department.png" *assets-dir*) 9 9)
+		 :police-department (,(merge-pathnames "police-department.png" *assets-dir*) 9 9)))
 
 (defparameter *button-assets*
   `(:powerplant-btn-up (,(merge-pathnames "powerplant-btn-up.png" *assets-dir*))
@@ -39,8 +44,6 @@
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
 	   :bop ,(merge-pathnames "bop.wav" *assets-dir*)))
-
-(defparameter *sprite-sheet* nil)
 
  (defun play-sound (asset)
    (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
@@ -66,10 +69,15 @@
     (:sdl-key-q (sdl:push-quit-event))
     (:sdl-key-x (reset))
     (:sdl-key-d (setf *cursor* :dozer))
-    (:sdl-key-r (setf *cursor* :residential))
+    (:sdl-key-h (setf *cursor* :residential))
     (:sdl-key-c (setf *cursor* :commercial))
-    (:sdl-key-p (setf *cursor* :nuclear))
-    (:sdl-key-t (setf *cursor* :road))))
+    (:sdl-key-n (setf *cursor* :nuclear))
+    (:sdl-key-r (setf *cursor* :road))
+    (:sdl-key-w (setf *cursor* :wire))
+    (:sdl-key-g (setf *cursor* :garden))
+    (:sdl-key-i (setf *cursor* :industrial))
+    (:sdl-key-f (setf *cursor* :fire-department))
+    (:sdl-key-p (setf *cursor* :police-department))))
 
 (defun handle-mouse (x y)
   (when (sdl:mouse-left-p)
@@ -77,8 +85,6 @@
       (:dozer
        (dozer x y)
        (play-sound :dozer))
-      (:road
-       (build-tile x y :road))
       (t
        (build-tile x y *cursor*)))))
 
@@ -89,13 +95,9 @@
 	(let ((x (* x *tile-size*))
 	      (y (* y *tile-size*))
 	      (dimensions (sdl:cast-to-int (* (sqrt (sprite-dimensions *cursor*)) *tile-size*))))
-	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
+;	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
 	  (sdl:with-color (col *build-color*)
-	    (case *cursor*
-	      ((:dozer :road)
-	       (sdl:draw-rectangle-* x y *tile-size* *tile-size*))
-	      (t
-	       (sdl:draw-rectangle-* x y dimensions dimensions)))))))))
+	    (sdl:draw-rectangle-* x y dimensions dimensions)))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)
