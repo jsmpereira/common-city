@@ -1,37 +1,6 @@
 (in-package #:common-city)
 
-(defparameter *sprites* (make-hash-table :test #'equal))
-(defparameter *buttons* (make-hash-table :test #'equal))
-
-(defparameter *road-mapping*
-  '(#b1000 3
-    #b0001 3
-    #b1001 3
-    #b1010 4
-    #b0011 5
-    #b0011 5
-    #b0101 6
-    #b1100 7
-    #b1110 8
-    #b1011 9
-    #b0111 10
-    #b1101 11
-    #b1111 12))
-
 (defparameter *entities* (make-hash-table :test #'equal))
-
-(defparameter *tile-size* 16)
-(defparameter *tiles* `(:dirt sprite-tile
-			      :forest sprite-tile
-			      :residential complex-tile
-			      :commercial complex-tile
-			      :nuclear complex-tile
-			      :road sprite-tile
-			      :wire sprite-tile
-			      :garden animated-tile
-			      :industrial complex-tile
-			      :fire-department complex-tile
-			      :police-department complex-tile))
 
 (defclass entity ()
   ((x :initarg :x :accessor x :documentation "X coordinate.")
@@ -132,7 +101,7 @@
 
 (defmethod initialize-instance :after ((entity complex-tile) &key tile-type)
   (with-slots (x y size tiles sprite-sheet) entity
-    (setf size (sprite-dimensions tile-type))
+    (setf size (sprite-data tile-type 'dimensions))
     (when (can-build-p entity)
       (let ((rows (sqrt size))
 	    (sprite-sheet (gethash tile-type *sprites*))
@@ -159,25 +128,6 @@
 			      (1+ ny)
 			      ny)
 	  collect `(,(+ nx x) ,(+ ny y)))))
-
-(defun init-sprite (path size)
-  (let* ((total-size (* size *tile-size*))
-	 (sprite-sheet (sdl-image:load-image path))
-	 (sprite-cells (loop for y from 0 to total-size by *tile-size*
-			     append (loop for x from 0 to size by total-size
-					  collect (list x y *tile-size* *tile-size*)))))
-    (setf (sdl:cells sprite-sheet) sprite-cells)
-    sprite-sheet))
-
-(defun init-sprites ()
-  (loop for indicator in *sprite-assets* by #'cddr do
-	(multiple-value-bind (key value tail) (get-properties *sprite-assets* `(,indicator))
-	  (setf (gethash indicator *sprites*) (init-sprite (first value) (third value))))))
-
-(defun init-buttons ()
-  (loop for indicator in *button-assets* by #'cddr do
-	(multiple-value-bind (key value tail) (get-properties *button-assets* `(,indicator))
-	  (setf (gethash indicator *buttons*) (sdl:load-image (first value))))))
 
 (defgeneric draw (entity))
 
@@ -300,7 +250,7 @@
   "Create a tile instance dispatched on tile-type with normalized coords."
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
     (declare (ignore hashval))
-    (make-instance (getf *tiles* tile-type) :x norm-x :y norm-y :tile-type tile-type)))
+    (make-instance (sprite-data tile-type 'tile-class) :x norm-x :y norm-y :tile-type tile-type)))
 
 (defclass point ()
   ((x :initarg :x
@@ -347,7 +297,7 @@
 
 (defun setup-world ()
   (do-world (i j)
-    (build (make-instance 'sprite-tile :x j :y i :tile-type :wilderness))))
+    (build (make-instance (sprite-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
   (maphash #'(lambda (k v)
@@ -356,5 +306,6 @@
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
+  (setf *cursor* :residential)
   (setup-world)
   (setup-menu))

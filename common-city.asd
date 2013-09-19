@@ -11,6 +11,7 @@
 	       #:lispbuilder-sdl-image
 	       #:lispbuilder-sdl-mixer)
   :components ((:file "package")
+	       (:file "assets")
                (:file "common-city")
 	       (:file "render")))
 

@@ -13,41 +13,9 @@
 (defparameter *cursor* :residential)
 (defparameter *menu-surface* nil)
 
-(defparameter *assets-dir* 
-  (merge-pathnames #P"assets/" simcity-config:*base-directory*))
-
-(defparameter *sprite-assets*
-  `(:residential (,(merge-pathnames "residential-full.png" *assets-dir*) 9 165)
-		 :commercial (,(merge-pathnames "commercial.png" *assets-dir*) 9 9)
-		 :nuclear (,(merge-pathnames "nuclear.png" *assets-dir*) 16 16)
-		 :road (,(merge-pathnames "road.png" *assets-dir*) 1 15)
-		 :wire (,(merge-pathnames "wire.png" *assets-dir*) 1 13)
-		 :wilderness (,(merge-pathnames "wilderness.png" *assets-dir*) 1 38)
-		 :garden (,(merge-pathnames "garden.png" *assets-dir*) 1 4)
-		 :animation-sheet (,(merge-pathnames "animation-sheet.png" *assets-dir*) 1 41)
-		 :industrial (,(merge-pathnames "industrial.png" *assets-dir*) 9 9)
-		 :fire-department (,(merge-pathnames "fire-department.png" *assets-dir*) 9 9)
-		 :police-department (,(merge-pathnames "police-department.png" *assets-dir*) 9 9)))
-
-(defparameter *button-assets*
-  `(:powerplant-btn-up (,(merge-pathnames "powerplant-btn-up.png" *assets-dir*))
-		       :powerplant-btn-down (,(merge-pathnames "powerplant-btn-down.png" *assets-dir*))))
-
-(defun sprite-dimensions (key)
-  "Return sprite dimensions."
-  (multiple-value-bind (key value tail) (get-properties *sprite-assets* `(,key))
-    (declare (ignore key tail))
-    (if value
-      (second value)
-      1)))
-
-(defparameter *audio-assets*
-  `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)
-	   :bop ,(merge-pathnames "bop.wav" *assets-dir*)))
-
- (defun play-sound (asset)
-   (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
-     (sdl-mixer:play-sample sound)))
+(defun play-sound (asset)
+  (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
+    (sdl-mixer:play-sample sound)))
 
 (defun render-step ()
   (loop for k being the hash-keys in *entities* using (hash-value v)
@@ -68,7 +36,7 @@
   (case key
     (:sdl-key-q (sdl:push-quit-event))
     (:sdl-key-x (reset))
-    (:sdl-key-d (setf *cursor* :dozer))
+    (:sdl-key-d (setf *cursor* :wilderness))
     (:sdl-key-h (setf *cursor* :residential))
     (:sdl-key-c (setf *cursor* :commercial))
     (:sdl-key-n (setf *cursor* :nuclear))
@@ -94,7 +62,7 @@
       (with-slots (x y) tile
 	(let ((x (* x *tile-size*))
 	      (y (* y *tile-size*))
-	      (dimensions (sdl:cast-to-int (* (sqrt (sprite-dimensions *cursor*)) *tile-size*))))
+	      (dimensions (sdl:cast-to-int (* (sqrt (sprite-data *cursor* 'dimensions)) *tile-size*))))
 ;	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
 	  (sdl:with-color (col *build-color*)
 	    (sdl:draw-rectangle-* x y dimensions dimensions)))))))
@@ -114,7 +82,7 @@
       (sdl:init-image :png)
       (setf *menu-surface* (sdl:create-surface *menu-width* *screen-height*))
       (init-buttons)
-      (init-sprites)
+      (setup-sprites)
       (reset)
       (sdl:with-events ()
 	(:quit-event ()
