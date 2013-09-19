@@ -36,7 +36,7 @@
   (case key
     (:sdl-key-q (sdl:push-quit-event))
     (:sdl-key-x (reset))
-    (:sdl-key-d (setf *cursor* :wilderness))
+    (:sdl-key-d (setf *cursor* :dozer))
     (:sdl-key-h (setf *cursor* :residential))
     (:sdl-key-c (setf *cursor* :commercial))
     (:sdl-key-n (setf *cursor* :nuclear))
@@ -62,7 +62,7 @@
       (with-slots (x y) tile
 	(let ((x (* x *tile-size*))
 	      (y (* y *tile-size*))
-	      (dimensions (sdl:cast-to-int (* (sqrt (sprite-data *cursor* 'dimensions)) *tile-size*))))
+	      (dimensions (sdl:cast-to-int (* (sqrt (or (sprite-data *cursor* 'dimensions) 1)) *tile-size*))))
 ;	  (sdl:draw-string-solid-* (format nil "(~A, ~A)" x y) x y)
 	  (sdl:with-color (col *build-color*)
 	    (sdl:draw-rectangle-* x y dimensions dimensions)))))))

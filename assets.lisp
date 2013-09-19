@@ -51,7 +51,9 @@
 
 (defun sprite-data (sprite accessor)
   "Return sprite data."
-  (funcall accessor (gethash sprite *sprite-assets-hash*)))
+  (let ((sprite-instance (gethash sprite *sprite-assets-hash*)))
+    (when sprite-instance
+      (funcall accessor sprite-instance))))
 
 (defun init-sprite (path size)
   (let* ((total-size (* size *tile-size*))
