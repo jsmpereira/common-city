@@ -7,11 +7,16 @@ http://www.youtube.com/watch?v=SNxaLiwHy50
 
 Controls:
 
-- R -> Residential Zone
+- H -> Residential Zone
 - C -> Commercial Zone
-- P -> Nuclear Plant
+- I -> Industrial Zone
+- P -> Police Department
+- F -> Fire Department
+- N -> Nuclear Plant
 - D -> Dozer
-- T -> Road
+- R -> Road
+- W -> Wire
+- G -> Garden
 - X -> Reset world
 - Q -> Quit
 
