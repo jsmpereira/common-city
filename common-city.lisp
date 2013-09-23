@@ -307,8 +307,9 @@
     (build (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
-   (make-instance 'button-tile :x 0 :y 70 :tile-type :nuclear)
-   (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer))
+   (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer)
+   (make-instance 'button-tile :x 100 :y 70 :tile-type :nuclear)
+   (make-instance 'button-tile :x 0 :y 70 :tile-type :residential))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
