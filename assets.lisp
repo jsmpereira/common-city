@@ -2,25 +2,16 @@
 
 (in-package #:common-city)
 
-(defparameter *sprites* (make-hash-table :test #'equal))
-(defparameter *buttons* (make-hash-table :test #'equal))
-
 (defparameter *tile-size* 16)
 
 (defparameter *assets-dir* 
   (merge-pathnames #P"assets/" simcity-config:*base-directory*))
 
-(defparameter *sprite-assets-hash* (make-hash-table :test #'equal))
+(defparameter *sprite-assets* (make-hash-table :test #'equal))
+(defparameter *button-assets* (make-hash-table :test #'equal))
 
-(defun initargs-list (args)
-  (let ((init-list '(:name :file :dimensions :height :tile-class :mappings)))
-    (assert (= (length args) (length init-list)))
-    (loop for i in init-list
-	  for j in args
-	  appending `(,i ,j))))
-
-(defparameter *sprite-assets*
-  `((:residential "residential.png" 9 165 complex-tile '((0 8)))
+(defparameter *sprite-specs*
+  `((:residential "residential.png" 9 9 complex-tile '((0 8)))
     (:commercial "commercial.png" 9 9 complex-tile '((0 8)))
     (:nuclear "nuclear.png" 16 16 complex-tile '(()))
     (:road "road.png" 1 15 sprite-tile '(()))
@@ -32,13 +23,20 @@
     (:fire-department "fire-department.png" 9 9 complex-tile '(()))
     (:police-department "police-department.png" 9 9 complex-tile '(()))))
 
+(defparameter *button-specs*
+  `((:nuclear "nuclear-btn.png" 42 2 button-tile '(()) "Nuclear Plant" 5000)))
+
 (defclass asset ()
-  ((name :initarg :name :accessor name)
-   (file :initarg :file :accessor file)))
+  ((surface :initarg :surface :accessor surface)
+   (name :initarg :name :accessor name)
+   (path :initarg :path :accessor path)))
 
 (defmethod initialize-instance :after ((asset asset) &key)
-  (with-slots (file) asset
-    (setf file (merge-pathnames file *assets-dir*))))
+  (with-slots (path) asset
+    (setf path (merge-pathnames path *assets-dir*))))
+
+(defgeneric add-asset (asset)
+  (:documentation "Adds the given asset to the appropriate collection."))
 
 (defclass sprite-asset (asset)
   ((dimensions :initarg :dimensions :accessor dimensions)
@@ -46,32 +44,51 @@
    (tile-class :initarg :tile-class :accessor tile-class)
    (mappings :initarg :mappings :accessor mappings)))
 
-(defun add-sprite (sprite-instance)
-  (setf (gethash (name sprite-instance) *sprite-assets-hash*) sprite-instance))
+(defmethod initialize-instance :after ((sprite-asset sprite-asset) &key)
+  (with-slots (path height dimensions surface) sprite-asset
+    (let* ((tile-size (max dimensions *tile-size*))
+	   (total-size (* height tile-size))
+	   (sprite-sheet (sdl-image:load-image path))
+	   (sprite-cells (loop for y from 0 below total-size by tile-size
+			       append (loop for x from 0 below height by total-size
+					    collect (list x y tile-size tile-size)))))
+      (setf (sdl:cells sprite-sheet) sprite-cells)
+      (setf surface sprite-sheet))))
 
-(defun sprite-data (sprite accessor)
-  "Return sprite data."
-  (let ((sprite-instance (gethash sprite *sprite-assets-hash*)))
-    (when sprite-instance
-      (funcall accessor sprite-instance))))
+(defmethod add-asset ((sprite-asset sprite-asset))
+  (setf (gethash (name sprite-asset) *sprite-assets*) sprite-asset))
 
-(defun init-sprite (path size)
-  (let* ((total-size (* size *tile-size*))
-	 (sprite-sheet (sdl-image:load-image path))
-	 (sprite-cells (loop for y from 0 to total-size by *tile-size*
-			     append (loop for x from 0 to size by total-size
-					  collect (list x y *tile-size* *tile-size*)))))
-    (setf (sdl:cells sprite-sheet) sprite-cells)
-    sprite-sheet))
+(defclass button-asset (sprite-asset)
+  ((tooltip :initarg :tooltip :accessor tooltip)
+   (cost :initarg :cost :accessor cost)))
 
-(defun init-sprites ()
-  (maphash #'(lambda (k v)
-	       (setf (gethash k *sprites*) (init-sprite (file v) (height v)))) *sprite-assets-hash*))
+(defmethod add-asset ((button-asset button-asset))
+  (setf (gethash (name button-asset) *button-assets*) button-asset))
 
-(defun setup-sprites ()
-  (dolist (s *sprite-assets*)
-    (add-sprite (apply #'make-instance 'sprite-asset (initargs-list s))))
-  (init-sprites))
+(defun draw-tooltip (tooltip cost)
+  (sdl:draw-string-solid-* (format nil "~A: $~A" tooltip cost)  10 10 :surface (surface *text-surface*)))
+
+(defun asset-data (asset-key accessor &key (collection *sprite-assets*))
+  "Return asset data."
+  (let ((asset-instance (gethash asset-key collection)))
+    (when asset-instance
+      (funcall accessor asset-instance))))
+
+(defun initargs-list (asset-spec class)
+  (closer-mop:finalize-inheritance (find-class class))
+  (let ((arg-list (mapcan #'closer-mop:slot-definition-initargs
+			  (closer-mop:class-slots (find-class class)))))
+    (loop for i in (rest arg-list)
+	  for j in asset-spec
+	  appending `(,i ,j))))
+
+(defun init-assets (collection class)
+  (dolist (asset-spec collection)
+    (add-asset (apply #'make-instance class (initargs-list asset-spec class)))))
+
+(defun setup-assets ()
+  (init-assets *sprite-specs* 'sprite-asset)
+  (init-assets *button-specs* 'button-asset))
 
 (defparameter *road-mapping*
   '(#b1000 3
@@ -87,15 +104,6 @@
     #b0111 10
     #b1101 11
     #b1111 12))
-
-(defparameter *button-assets*
-  `(:powerplant-btn-up (,(merge-pathnames "powerplant-btn-up.png" *assets-dir*))
-		       :powerplant-btn-down (,(merge-pathnames "powerplant-btn-down.png" *assets-dir*))))
-
-(defun init-buttons ()
-  (loop for indicator in *button-assets* by #'cddr do
-	(multiple-value-bind (key value tail) (get-properties *button-assets* `(,indicator))
-	  (setf (gethash indicator *buttons*) (sdl:load-image (first value))))))
 
 (defparameter *audio-assets*
   `(:dozer ,(merge-pathnames "rumble.wav" *assets-dir*)

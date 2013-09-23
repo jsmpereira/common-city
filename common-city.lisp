@@ -1,26 +1,20 @@
 (in-package #:common-city)
 
 (defparameter *entities* (make-hash-table :test #'equal))
+(defparameter *buttons* (make-hash-table :test #'equal))
 
 (defclass entity ()
   ((x :initarg :x :accessor x :documentation "X coordinate.")
    (y :initarg :y :accessor y :documentation "Y coordinate.")
    (size :initarg :size :accessor size :documentation "Entity size.")
-   (surface :initarg :surface :accessor surface))
+   (parent-surface :initarg :parent-surface :accessor parent-surface))
   (:default-initargs
-   :surface sdl:*default-display*))
+   :parent-surface (surface *map-surface*)))
 
 (defmethod print-object ((object entity) stream)
   (print-unreadable-object (object stream :type t)
     (with-slots (x y) object
       (format stream "x: ~A y: ~A" x y))))
-
-(defclass button (entity)
-  ((image-path :initarg :image-path :accessor image-path))
-  (:default-initargs
-   :x 0
-   :y 0
-   :size 42))
 
 (defclass sprite-tile (entity)
   ((parent :initarg :parent :accessor parent)
@@ -30,7 +24,7 @@
    (sprite-sheet :initarg :sprite-sheet :accessor sprite-sheet))
   (:default-initargs
    :size 1
-   :sprite-cell nil
+   :sprite-cell 0
    :sprite-sheet nil
    :parent nil
    :action nil))
@@ -47,13 +41,26 @@
 
 (defmethod initialize-instance :after ((entity sprite-tile) &key)
   (with-slots (tile-type sprite-sheet sprite-cell) entity
-    (setf sprite-sheet (gethash tile-type *sprites*))
+    (setf sprite-sheet (asset-data tile-type 'surface))
     (case tile-type
       (:wilderness (setf sprite-cell (no-water)))
       (:dirt (progn
-	       (setf sprite-sheet (gethash :wilderness *sprites*))
+	       (setf sprite-sheet (asset-data :wilderness 'surface))
 	       (setf sprite-cell 0)))
       ((:road :wire) (setf sprite-cell 2)))
+    (build entity)))
+
+(defclass button-tile (sprite-tile)
+  ()
+  (:default-initargs
+   :x 0
+   :y 0
+   :size 42
+   :parent-surface (surface *menu-surface*)))
+
+(defmethod initialize-instance :after ((entity button-tile) &key)
+  (with-slots (tile-type sprite-sheet sprite-cell) entity
+    (setf sprite-sheet (asset-data tile-type 'surface :collection *button-assets*))
     (build entity)))
 
 (defclass animated-tile (sprite-tile)
@@ -76,7 +83,7 @@
 
 (defmethod initialize-instance :after ((entity animated-tile) &key)
   (with-slots (sprite-sheet sprite-cell tile-type first-frame current-frame max-frames running-p) entity
-    (setf sprite-sheet (gethash :animation-sheet *sprites*))
+    (setf sprite-sheet (asset-data :animation-sheet 'surface))
     (case tile-type
       (:garden (progn
 		 (setf max-frames 4)
@@ -101,10 +108,10 @@
 
 (defmethod initialize-instance :after ((entity complex-tile) &key tile-type)
   (with-slots (x y size tiles sprite-sheet) entity
-    (setf size (sprite-data tile-type 'dimensions))
+    (setf size (asset-data tile-type 'dimensions))
     (when (can-build-p entity)
       (let ((rows (sqrt size))
-	    (sprite-sheet (gethash tile-type *sprites*))
+	    (sprite-sheet (asset-data tile-type 'surface))
 	    (action-cell (1- (ceiling (/ size 2)))))
 	(setf sprite-sheet sprite-sheet)
 	(loop for i below size
@@ -131,24 +138,24 @@
 
 (defgeneric draw (entity))
 
-(defmethod draw ((entity button))
-  (with-slots (x y image-path surface) entity
-    (sdl:draw-surface-at-* image-path x y :surface surface)))
+(defmethod draw ((entity button-tile))
+  (with-slots (x y size sprite-sheet parent-surface sprite-cell) entity
+    (sdl:draw-surface-at-* sprite-sheet (* x size) (* y size) :surface parent-surface :cell sprite-cell)))
 
 (defmethod draw ((entity sprite-tile))
-  (with-slots (x y size sprite-cell sprite-sheet tile-type) entity
+  (with-slots (x y size sprite-cell sprite-sheet tile-type parent-surface) entity
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
-      (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell)
+      (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell :surface parent-surface)
       (when (member tile-type '(:road :wire))
 	(unless (check-wire-over-road entity)
 	  (setf sprite-cell (getf *road-mapping* (check-road entity) 2)))))))
 
 (defmethod draw ((entity animated-tile))
-  (with-slots (x y sprite-sheet current-frame running-p) entity
+  (with-slots (x y sprite-sheet current-frame running-p parent-surface) entity
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
-      (sdl:draw-surface-at-* sprite-sheet x y :cell current-frame)
+      (sdl:draw-surface-at-* sprite-sheet x y :cell current-frame :surface parent-surface)
       (when running-p
 	(animate entity)))))
 
@@ -214,9 +221,9 @@
 (defgeneric build (entity)
   (:documentation "Adds entity to the `*entities*' collection."))
 
-(defmethod build ((entity button))
-  (with-slots (image-path) entity
-    (setf (gethash image-path *entities*) entity)))
+(defmethod build ((entity button-tile))
+  (with-slots (tile-type) entity
+    (setf (gethash tile-type *buttons*) entity)))
 
 (defmethod build ((entity sprite-tile))
   (when (can-build-p entity)
@@ -250,7 +257,7 @@
   "Create a tile instance dispatched on tile-type with normalized coords."
   (multiple-value-bind (hashval norm-x norm-y) (snap-to-tile x y)
     (declare (ignore hashval))
-    (make-instance (sprite-data tile-type 'tile-class) :x norm-x :y norm-y :tile-type tile-type)))
+    (make-instance (asset-data tile-type 'tile-class) :x norm-x :y norm-y :tile-type tile-type)))
 
 (defclass point ()
   ((x :initarg :x
@@ -290,22 +297,20 @@
 		  do ,@body)))
 
 (defun snap-to-tile (x y)
-  "Adjust mouse coords to tile coords."
+  "Adjust mouse cords to tile coords."
   (let ((norm-x (/ (- x (mod x *tile-size*)) *tile-size*))
 	(norm-y (/ (- y (mod y *tile-size*)) *tile-size*)))
     (values (gethash (genhash norm-x norm-y) *entities*) norm-x norm-y)))
 
 (defun setup-world ()
   (do-world (i j)
-    (build (make-instance (sprite-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
+    (build (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
-  (maphash #'(lambda (k v)
-	       (declare (ignore k))
-	       (build (make-instance 'button :x 0 :y 0 :image-path v :surface *menu-surface*))) *buttons*))
+   (make-instance 'button-tile :x 0 :y 0 :tile-type :nuclear))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
-  (setf *cursor* :residential)
+  (setf *map-cursor* :residential)
   (setup-world)
   (setup-menu))

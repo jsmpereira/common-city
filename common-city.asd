@@ -9,7 +9,9 @@
   :license "Specify license here"
   :depends-on (#:lispbuilder-sdl
 	       #:lispbuilder-sdl-image
-	       #:lispbuilder-sdl-mixer)
+	       #:lispbuilder-sdl-mixer
+	       #:lispbuilder-sdl-ttf
+	       #:closer-mop)
   :components ((:file "package")
 	       (:file "assets")
                (:file "common-city")

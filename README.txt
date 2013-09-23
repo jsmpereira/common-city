@@ -20,6 +20,7 @@ Controls:
 - X -> Reset world
 - Q -> Quit
 
+Tested on OS X 10.8.4 and Ubuntu 12.04.
 
 This repository was created for participation in Lisp in Summer Projects (http://lispinsummerprojects.org/).
 
