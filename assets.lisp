@@ -24,7 +24,8 @@
     (:police-department "police-department.png" 9 9 complex-tile '(()))))
 
 (defparameter *button-specs*
-  `((:nuclear "nuclear-btn.png" 42 2 button-tile '(()) "Nuclear Plant" 5000)))
+  `((:dozer "dozer-btn.png" 34 2 button-tile '() "Bulldoze" 1)
+    (:nuclear "nuclear-btn.png" 42 2 button-tile '(()) "Nuclear Plant" 5000)))
 
 (defclass asset ()
   ((surface :initarg :surface :accessor surface)

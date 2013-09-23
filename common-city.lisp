@@ -55,11 +55,11 @@
   (:default-initargs
    :x 0
    :y 0
-   :size 42
    :parent-surface (surface *menu-surface*)))
 
 (defmethod initialize-instance :after ((entity button-tile) &key)
-  (with-slots (tile-type sprite-sheet sprite-cell) entity
+  (with-slots (tile-type sprite-sheet sprite-cell size) entity
+    (setf size (asset-data tile-type 'dimensions :collection *button-assets*))
     (setf sprite-sheet (asset-data tile-type 'surface :collection *button-assets*))
     (build entity)))
 
@@ -140,7 +140,7 @@
 
 (defmethod draw ((entity button-tile))
   (with-slots (x y size sprite-sheet parent-surface sprite-cell) entity
-    (sdl:draw-surface-at-* sprite-sheet (* x size) (* y size) :surface parent-surface :cell sprite-cell)))
+    (sdl:draw-surface-at-* sprite-sheet x y :surface parent-surface :cell sprite-cell)))
 
 (defmethod draw ((entity sprite-tile))
   (with-slots (x y size sprite-cell sprite-sheet tile-type parent-surface) entity
@@ -307,10 +307,12 @@
     (build (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
-   (make-instance 'button-tile :x 0 :y 0 :tile-type :nuclear))
+   (make-instance 'button-tile :x 0 :y 70 :tile-type :nuclear)
+   (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
+  (setf *buttons* (make-hash-table :test #'equal))
   (setf *map-cursor* :residential)
   (setup-world)
   (setup-menu))

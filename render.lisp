@@ -39,7 +39,7 @@
 (defun hit-test (button mx my)
   (with-slots (x y size) button
     (let ((x (+ x *map-width*)))
-      (and (> mx x) (< (- mx *map-width*) size) (> my y) (< my size)))))
+      (and (> mx x) (< (- mx *map-width*) size) (>  my y) (< my (+ y size))))))
 
 (defun play-sound (asset)
   (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
