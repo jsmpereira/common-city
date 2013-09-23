@@ -25,6 +25,8 @@
 
 (defparameter *button-specs*
   `((:dozer "dozer-btn.png" 34 2 button-tile '() "Bulldoze" 1)
+    (:wire "wire-btn.png" 34 2 button-tile '() "Power Lines" 5)
+    (:garden "garden-btn.png" 34 2 button-tile '() "Park" 10)
     (:residential "residential-btn.png" 50 2 button-tile '() "Residential" 100)
     (:commercial "commercial-btn.png" 50 2 button-tile '() "Commercial" 100)
     (:industrial "industrial-btn.png" 50 2 button-tile '() "Industrial" 100)

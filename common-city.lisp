@@ -61,6 +61,7 @@
   (with-slots (tile-type sprite-sheet sprite-cell size) entity
     (setf size (asset-data tile-type 'dimensions :collection *button-assets*))
     (setf sprite-sheet (asset-data tile-type 'surface :collection *button-assets*))
+    (setf sprite-cell 0)
     (build entity)))
 
 (defclass animated-tile (sprite-tile)
@@ -312,8 +313,10 @@
    (make-instance 'button-tile :x 0 :y 70 :tile-type :residential)
    (make-instance 'button-tile :x 0 :y 120 :tile-type :commercial)
    (make-instance 'button-tile :x 0 :y 170 :tile-type :industrial)
-   (make-instance 'button-tile :x 50 :y 70 :tile-type :police-department)
-   (make-instance 'button-tile :x 50 :y 104 :tile-type :fire-department))
+   (make-instance 'button-tile :x 50 :y 70 :tile-type :wire)
+   (make-instance 'button-tile :x 50 :y 104 :tile-type :garden)
+   (make-instance 'button-tile :x 50 :y 138 :tile-type :police-department)
+   (make-instance 'button-tile :x 50 :y 172 :tile-type :fire-department))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
