@@ -26,6 +26,8 @@
 (defparameter *button-specs*
   `((:dozer "dozer-btn.png" 34 2 button-tile '() "Bulldoze" 1)
     (:residential "residential-btn.png" 50 2 button-tile '() "Residential" 100)
+    (:commercial "commercial-btn.png" 50 2 button-tile '() "Commercial" 100)
+    (:industrial "industrial-btn.png" 50 2 button-tile '() "Industrial" 100)
     (:nuclear "nuclear-btn.png" 42 2 button-tile '(()) "Nuclear Plant" 5000)))
 
 (defclass asset ()
