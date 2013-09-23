@@ -311,7 +311,9 @@
    (make-instance 'button-tile :x 100 :y 70 :tile-type :nuclear)
    (make-instance 'button-tile :x 0 :y 70 :tile-type :residential)
    (make-instance 'button-tile :x 0 :y 120 :tile-type :commercial)
-   (make-instance 'button-tile :x 0 :y 170 :tile-type :industrial))
+   (make-instance 'button-tile :x 0 :y 170 :tile-type :industrial)
+   (make-instance 'button-tile :x 50 :y 70 :tile-type :police-department)
+   (make-instance 'button-tile :x 50 :y 104 :tile-type :fire-department))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))
