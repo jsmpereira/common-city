@@ -84,7 +84,8 @@
     (:sdl-key-g (setf *map-cursor* :garden))
     (:sdl-key-i (setf *map-cursor* :industrial))
     (:sdl-key-f (setf *map-cursor* :fire-department))
-    (:sdl-key-p (setf *map-cursor* :police-department))))
+    (:sdl-key-p (setf *map-cursor* :police-department)))
+  (setf (sprite-cell (gethash *map-cursor* *buttons*)) 1))
 
 (defun handle-mouse (x y)
   (when (sdl:mouse-left-p)
