@@ -52,6 +52,8 @@
 (defun menu ()
   (maphash #'(lambda (k v)
 	       (draw v)
+	       (unless (eql *map-cursor* (tile-type v))
+		 (setf (sprite-cell v) 0))
 	       (when (and (hit-test v (sdl:mouse-x) (sdl:mouse-y)) (sdl:mouse-left-p))
 		 (setf *map-cursor* (tile-type v))
 		 (setf (sprite-cell v) 1))) *buttons*))
@@ -132,7 +134,6 @@
 		  :double-buffer t)
       (setf (sdl:frame-rate) 30)
       (sdl-mixer:open-audio)
-      (sdl:initialise-default-font)
       (sdl:enable-key-repeat nil nil)
       (setf sdl-cffi::*image-loaded-p* t) ; hack to load .png
       (sdl:init-image :png)

@@ -305,7 +305,7 @@
 
 (defun setup-world ()
   (do-world (i j)
-    (build (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness))))
+    (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness)))
 
 (defun setup-menu ()
    (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer)
