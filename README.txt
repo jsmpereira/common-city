@@ -22,6 +22,10 @@ Controls:
 
 Tested on OS X 10.8.4 and Ubuntu 12.04.
 
+Run:
+(ql:quickload :common-city)
+(common-city::main)
+
 This repository was created for participation in Lisp in Summer Projects (http://lispinsummerprojects.org/).
 
 Work is continued from my own initial code at https://github.com/jsmpereira/cl-simcity. It started with a group
