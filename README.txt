@@ -4,6 +4,7 @@
 * Needs lots of work :p
 
 http://www.youtube.com/watch?v=SNxaLiwHy50
+(Early video. Currently it's a bit more complete.)
 
 Controls:
 
@@ -13,8 +14,13 @@ Controls:
 - P -> Police Department
 - F -> Fire Department
 - N -> Nuclear Plant
+- O -> Coal Plant
+- S -> Seaport
+- U -> Stadium
+- A -> Airport
 - D -> Dozer
 - R -> Road
+- T -> Rail
 - W -> Wire
 - G -> Garden
 - X -> Reset world
