@@ -80,6 +80,7 @@
     (:sdl-key-h (setf *map-cursor* :residential))
     (:sdl-key-c (setf *map-cursor* :commercial))
     (:sdl-key-n (setf *map-cursor* :nuclear))
+    (:sdl-key-o (setf *map-cursor* :coal))
     (:sdl-key-a (setf *map-cursor* :airport))
     (:sdl-key-r (setf *map-cursor* :road))
     (:sdl-key-t (setf *map-cursor* :rail))
@@ -125,8 +126,7 @@
 		    (y (* y *tile-size*)))
 		(sdl:with-color (col *build-color*)
 		  (sdl:draw-rectangle-* x y dimensions dimensions :surface (surface *map-surface*)))))
-	    (progn
-	      (sdl:draw-circle-* (sdl:mouse-x) (sdl:mouse-y) 5)))))))
+	    (sdl:draw-circle-* (sdl:mouse-x) (sdl:mouse-y) 5 :surface (surface *menu-surface*)))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)
