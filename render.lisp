@@ -111,19 +111,19 @@
   (draw-tooltip (asset-data *map-cursor* 'tooltip :collection *button-assets*)
 		(asset-data *map-cursor* 'cost :collection *button-assets*))
   (multiple-value-bind (tile mx my) (snap-to-tile (sdl:mouse-x) (sdl:mouse-y))
-    (let* ((mx (* mx *tile-size*))
-	   (my (* my *tile-size*))
-	   (cursor-size (or (asset-data *map-cursor* 'dimensions) 1))
-	   (dimensions (sdl:cast-to-int (* (sqrt cursor-size) *tile-size*))))
-      (if (and (< mx *map-width*) (< my *map-height*))
-	  (when tile
+    (when tile
+      (let* ((mx (* mx *tile-size*))
+	     (my (* my *tile-size*))
+	     (cursor-size (asset-data *map-cursor* 'dimensions))
+	     (dimensions (sdl:cast-to-int (* (sqrt cursor-size) *tile-size*))))
+	(if (and (< mx *map-width*) (< my *map-height*))
 	    (with-slots (x y) tile
 	      (let ((x (* x *tile-size*))
 		    (y (* y *tile-size*)))
 		(sdl:with-color (col *build-color*)
-		  (sdl:draw-rectangle-* x y dimensions dimensions :surface (surface *map-surface*))))))
-	  (progn
-	    (sdl:draw-circle-* (sdl:mouse-x) (sdl:mouse-y) 5))))))
+		  (sdl:draw-rectangle-* x y dimensions dimensions :surface (surface *map-surface*)))))
+	    (progn
+	      (sdl:draw-circle-* (sdl:mouse-x) (sdl:mouse-y) 5)))))))
 
 (defun main ()
   (sb-int:with-float-traps-masked (:divide-by-zero :invalid :inexact :underflow :overflow)

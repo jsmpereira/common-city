@@ -304,11 +304,13 @@
     (values (gethash (genhash norm-x norm-y) *entities*) norm-x norm-y)))
 
 (defun setup-world ()
-  (do-world (i j)
-    (make-instance (asset-data :wilderness 'tile-class) :x j :y i :tile-type :wilderness)))
+  (let ((tile-class (asset-data :wilderness 'tile-class)))
+    (do-world (i j)
+      (make-instance tile-class :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
    (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer)
+   (make-instance 'button-tile :x 30 :y 40 :tile-type :road)
    (make-instance 'button-tile :x 100 :y 70 :tile-type :nuclear)
    (make-instance 'button-tile :x 0 :y 70 :tile-type :residential)
    (make-instance 'button-tile :x 0 :y 120 :tile-type :commercial)
