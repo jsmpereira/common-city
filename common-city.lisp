@@ -47,7 +47,7 @@
       (:dirt (progn
 	       (setf sprite-sheet (asset-data :wilderness 'surface))
 	       (setf sprite-cell 0)))
-      ((:road :wire) (setf sprite-cell 2)))
+      ((:road :wire :rail) (setf sprite-cell 2)))
     (build entity)))
 
 (defclass button-tile (sprite-tile)
@@ -148,7 +148,7 @@
     (let ((x (* x *tile-size*))
 	  (y (* y *tile-size*)))
       (sdl:draw-surface-at-* sprite-sheet x y :cell sprite-cell :surface parent-surface)
-      (when (member tile-type '(:road :wire))
+      (when (member tile-type '(:road :wire :rail))
 	(unless (check-wire-over-road entity)
 	  (setf sprite-cell (getf *road-mapping* (check-road entity) 2)))))))
 
@@ -175,28 +175,39 @@
   (:documentation "Checks if an entity can be build."))
 
 (defmethod can-build-p ((entity sprite-tile))
-  "FIXME"
+  "FIXME - smelly"
   (with-slots (x y sprite-cell tile-type sprite-sheet) entity
     (let* ((existing-tile (gethash (genhash x y) *entities*)))
       (if existing-tile
-	  (cond
-	    ((member (tile-type existing-tile) '(:dirt :wilderness :explosion)) t)
-	    ((member tile-type '(:dirt :explosion)) t)
-	    ((and (eql (tile-type existing-tile) :wire) (eql tile-type :road))
-	     (progn
-	       (setf (sprite-sheet existing-tile) sprite-sheet)
-	       (setf (tile-type existing-tile) :road)
-	       (case (sprite-cell existing-tile)
-		 (2 (setf (sprite-cell existing-tile) 14))
-		 (3 (setf (sprite-cell existing-tile) 13)))
-	       nil))
-	    ((and (member (tile-type existing-tile) '(:road)) (member tile-type '(:wire)))
-	     (progn
-	       (case (sprite-cell existing-tile)
-		 (2 (setf (sprite-cell existing-tile) 13))
-		 (3 (setf (sprite-cell existing-tile) 14)))
-	       nil))
-	    (t nil))
+	  (with-accessors ((e-sprite-cell sprite-cell) (e-tile-type tile-type) (e-sprite-sheet sprite-sheet)) existing-tile
+	    (cond
+	      ((member e-tile-type '(:dirt :wilderness :explosion)) t)
+	      ((member tile-type '(:dirt :explosion)) t)
+	      ((and (eql e-tile-type :wire) (eql tile-type :road))
+	       (setf e-sprite-sheet sprite-sheet)
+	       (setf e-tile-type :road)
+	       (case e-sprite-cell
+		 (2 (setf e-sprite-cell 14))
+		 (3 (setf e-sprite-cell 13)))
+	       nil)
+	      ((and (eql e-tile-type :rail) (eql tile-type :road))
+	       (setf e-sprite-sheet sprite-sheet)
+	       (setf e-tile-type :road)
+	       (case e-sprite-cell
+		 (2 (setf e-sprite-cell 16))
+		 (3 (setf e-sprite-cell 15)))
+	       nil)
+	      ((and (member e-tile-type '(:road)) (member tile-type '(:rail)))
+	       (case e-sprite-cell
+		 (2 (setf e-sprite-cell 16))
+		 (3 (setf e-sprite-cell 15)))
+	       nil)
+	      ((and (member e-tile-type '(:road)) (member tile-type '(:wire)))
+	       (case e-sprite-cell
+		 (2 (setf e-sprite-cell 13))
+		 (3 (setf e-sprite-cell 14)))
+	       nil)
+	      (t nil)))
 	  t))))
 
 (defmethod can-build-p ((entity complex-tile))
@@ -279,14 +290,14 @@
     (let ((tiles (loop for c in (cross entity)
 		       collect (gethash (genhash (x c) (y c)) *entities*))))
       (parse-integer (format nil "~{~A~}" (mapcar #'(lambda (x)
-						      (if (and x (member (tile-type x) '(:road :wire))
+						      (if (and x (member (tile-type x) '(:road :wire :rail))
 							       (or (eql (tile-type x) (tile-type entity))
-								   (member (sprite-cell x) '(13 14)))) 1 0)) tiles))
+								   (member (sprite-cell x) '(13 14 15 16)))) 1 0)) tiles))
 		     :radix 2))))
 
 (defun check-wire-over-road (entity)
   (with-slots (x y tile-type sprite-cell) entity
-    (and (member sprite-cell '(13 14)) (eql tile-type :road))))
+    (and (member sprite-cell '(13 14 15 16)) (eql tile-type :road))))
 
 (defun genhash (&rest rest)
   "Generate hash key based on passed arguments."
@@ -309,16 +320,17 @@
       (make-instance tile-class :x j :y i :tile-type :wilderness))))
 
 (defun setup-menu ()
-   (make-instance 'button-tile :x 0 :y 0 :tile-type :dozer)
-   (make-instance 'button-tile :x 30 :y 40 :tile-type :road)
-   (make-instance 'button-tile :x 100 :y 70 :tile-type :nuclear)
-   (make-instance 'button-tile :x 0 :y 70 :tile-type :residential)
-   (make-instance 'button-tile :x 0 :y 120 :tile-type :commercial)
-   (make-instance 'button-tile :x 0 :y 170 :tile-type :industrial)
-   (make-instance 'button-tile :x 50 :y 70 :tile-type :wire)
-   (make-instance 'button-tile :x 50 :y 104 :tile-type :garden)
-   (make-instance 'button-tile :x 50 :y 138 :tile-type :police-department)
-   (make-instance 'button-tile :x 50 :y 172 :tile-type :fire-department))
+   (make-instance 'button-tile :x 60 :y 10 :tile-type :dozer)
+   (make-instance 'button-tile :x 20 :y 50 :tile-type :road)
+   (make-instance 'button-tile :x 90 :y 50 :tile-type :rail)
+   (make-instance 'button-tile :x 110 :y 80 :tile-type :nuclear)
+   (make-instance 'button-tile :x 10 :y 80 :tile-type :residential)
+   (make-instance 'button-tile :x 10 :y 130 :tile-type :commercial)
+   (make-instance 'button-tile :x 10 :y 180 :tile-type :industrial)
+   (make-instance 'button-tile :x 60 :y 80 :tile-type :wire)
+   (make-instance 'button-tile :x 60 :y 114 :tile-type :garden)
+   (make-instance 'button-tile :x 60 :y 148 :tile-type :police-department)
+   (make-instance 'button-tile :x 60 :y 182 :tile-type :fire-department))
 
 (defun reset ()
   (setf *entities* (make-hash-table :test #'equal))

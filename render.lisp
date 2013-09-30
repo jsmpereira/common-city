@@ -81,6 +81,7 @@
     (:sdl-key-c (setf *map-cursor* :commercial))
     (:sdl-key-n (setf *map-cursor* :nuclear))
     (:sdl-key-r (setf *map-cursor* :road))
+    (:sdl-key-t (setf *map-cursor* :rail))
     (:sdl-key-w (setf *map-cursor* :wire))
     (:sdl-key-g (setf *map-cursor* :garden))
     (:sdl-key-i (setf *map-cursor* :industrial))

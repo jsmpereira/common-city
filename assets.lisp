@@ -15,6 +15,7 @@
     (:commercial "commercial.png" 9 complex-tile '((0 8)))
     (:nuclear "nuclear.png" 16 complex-tile '(()))
     (:road "road.png" 1 sprite-tile '(()))
+    (:rail "rail.png" 1 sprite-tile '(()))
     (:wire "wire.png" 1 sprite-tile '(()))
     (:wilderness "wilderness.png" 1 sprite-tile '(()))
     (:garden "garden.png" 1 animated-tile '(()))
@@ -26,6 +27,7 @@
 (defparameter *button-specs*
   `((:dozer "dozer-btn.png" 2 button-tile '() "Bulldoze (D)" 1)
     (:road "road-btn.png" 2 button-tile '() "Road (R)" 10)
+    (:rail "rail-btn.png" 2 button-tile '() "Rail (T)" 20)
     (:wire "wire-btn.png" 2 button-tile '() "Power Lines (W)" 5)
     (:garden "garden-btn.png" 2 button-tile '() "Park (G)" 10)
     (:residential "residential-btn.png" 2 button-tile '() "Residential (H)" 100)
