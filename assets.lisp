@@ -15,6 +15,7 @@
     (:commercial "commercial.png" 9 complex-tile '((0 8)))
     (:nuclear "nuclear.png" 16 complex-tile '(()))
     (:coal "coal.png" 16 complex-tile '(()))
+    (:seaport "seaport.png" 16 complex-tile '(()))
     (:airport "airport.png" 36 complex-tile '(()))
     (:road "road.png" 1 sprite-tile '(()))
     (:rail "rail.png" 1 sprite-tile '(()))
@@ -39,6 +40,7 @@
     (:fire-department "fire-department-btn.png" 2 button-tile '() "Fire Department (F)" 500)
     (:nuclear "nuclear-btn.png" 2 button-tile '(()) "Nuclear Plant (N)" 5000)
     (:coal "coal-btn.png" 2 button-tile '(()) "Coal Plant (O)" 3000)
+    (:seaport "seaport-btn.png" 2 button-tile '(()) "Seaport (S)" 3000)
     (:airport "airport-btn.png" 2 button-tile '(()) "Airport (A)" 10000)))
 
 (defclass asset ()

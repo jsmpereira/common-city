@@ -329,6 +329,7 @@
    (make-instance 'button-tile :x 90 :y 50 :tile-type :rail)
    (make-instance 'button-tile :x 110 :y 80 :tile-type :nuclear)
    (make-instance 'button-tile :x 110 :y 125 :tile-type :coal)
+   (make-instance 'button-tile :x 110 :y 170 :tile-type :seaport)
    (make-instance 'button-tile :x 45 :y 240 :tile-type :airport)
    (make-instance 'button-tile :x 10 :y 80 :tile-type :residential)
    (make-instance 'button-tile :x 10 :y 130 :tile-type :commercial)
