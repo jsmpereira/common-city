@@ -120,12 +120,16 @@
 	      for ny = 0 then (if (zerop nx)
 				  (1+ ny)
 				  ny)
-	      do (if (and (= i 9) (eql tile-type :nuclear))
-		     (push (make-instance 'animated-tile :tile-type :nuclear
-					  :x (+ nx x) :y (+ ny y) :first-frame 8 :max-frames 4 :repeat-p t :parent entity) tiles)
-		     (push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
-					  :sprite-cell i :tile-type tile-type
-					  :parent entity) tiles)))
+	      do (cond ((and (= i 9) (eql tile-type :nuclear))
+			(push (make-instance 'animated-tile :tile-type :nuclear
+					     :x (+ nx x) :y (+ ny y) :first-frame 8 :max-frames 4 :repeat-p t :parent entity) tiles))
+		       ((and (= i 2) (eql tile-type :airport))
+			(push (make-instance 'animated-tile :tile-type :airport
+					     :x (+ nx x) :y (+ ny y) :first-frame 29 :max-frames 8 :repeat-p t :parent entity) tiles))
+		       (t
+			(push (make-instance 'sprite-tile :x (+ nx x) :y (+ ny y)
+					     :sprite-cell i :tile-type tile-type
+					     :parent entity) tiles))))
 	(setf (action (nth action-cell tiles)) :blow)))))
 
 (defun with-tile-size-at (size x y)
@@ -324,6 +328,7 @@
    (make-instance 'button-tile :x 20 :y 50 :tile-type :road)
    (make-instance 'button-tile :x 90 :y 50 :tile-type :rail)
    (make-instance 'button-tile :x 110 :y 80 :tile-type :nuclear)
+   (make-instance 'button-tile :x 45 :y 240 :tile-type :airport)
    (make-instance 'button-tile :x 10 :y 80 :tile-type :residential)
    (make-instance 'button-tile :x 10 :y 130 :tile-type :commercial)
    (make-instance 'button-tile :x 10 :y 180 :tile-type :industrial)

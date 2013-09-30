@@ -80,6 +80,7 @@
     (:sdl-key-h (setf *map-cursor* :residential))
     (:sdl-key-c (setf *map-cursor* :commercial))
     (:sdl-key-n (setf *map-cursor* :nuclear))
+    (:sdl-key-a (setf *map-cursor* :airport))
     (:sdl-key-r (setf *map-cursor* :road))
     (:sdl-key-t (setf *map-cursor* :rail))
     (:sdl-key-w (setf *map-cursor* :wire))
