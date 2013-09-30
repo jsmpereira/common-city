@@ -82,6 +82,7 @@
     (:sdl-key-n (setf *map-cursor* :nuclear))
     (:sdl-key-o (setf *map-cursor* :coal))
     (:sdl-key-s (setf *map-cursor* :seaport))
+    (:sdl-key-u (setf *map-cursor* :stadium))
     (:sdl-key-a (setf *map-cursor* :airport))
     (:sdl-key-r (setf *map-cursor* :road))
     (:sdl-key-t (setf *map-cursor* :rail))
