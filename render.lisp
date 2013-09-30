@@ -37,9 +37,10 @@
     (sdl:draw-rectangle-* 1 1 width height :color sdl:*white* :surface surface)))
 
 (defun hit-test (button mx my)
-  (with-slots (x y size) button
-    (let ((x (+ x *map-width*)))
-      (and (> mx x) (< mx (+ x size)) (> my y) (< my (+ y size))))))
+  (with-slots (x y size sprite-sheet) button
+    (let ((x (+ x *map-width*))
+	  (height (/ (sdl:height sprite-sheet) size)))
+      (and (> mx x) (< mx (+ x (sdl:width sprite-sheet))) (> my y) (< my (+ y height))))))
 
 (defun play-sound (asset)
   (let ((sound (sdl-mixer:load-sample (getf *audio-assets* asset))))
