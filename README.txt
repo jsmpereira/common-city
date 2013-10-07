@@ -3,6 +3,9 @@
 
 * Needs lots of work :p
 
+Screenshot (current)
+https://www.dropbox.com/s/vkkalv2kas5vqo6/common-city.png
+
 http://www.youtube.com/watch?v=SNxaLiwHy50
 (Early video. Currently it's a bit more complete.)
 
